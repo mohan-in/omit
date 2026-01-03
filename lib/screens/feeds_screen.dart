@@ -15,7 +15,7 @@ class FeedsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('RSS Reader'),
+        title: const Text('OMIT'),
         actions: [
           IconButton(
             icon: const Icon(Icons.bookmark_outline),
