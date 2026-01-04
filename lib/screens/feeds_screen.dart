@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../models/models.dart';
-import '../repositories/repositories.dart';
+import '../notifiers/notifiers.dart';
 import '../widgets/add_feed_dialog.dart';
 import 'article_list_screen.dart';
 import 'bookmarks_screen.dart';
@@ -29,23 +29,23 @@ class FeedsScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: Consumer<FeedRepository>(
-        builder: (context, feedRepo, child) {
-          if (feedRepo.isLoading && feedRepo.feeds.isEmpty) {
+      body: Consumer<FeedNotifier>(
+        builder: (context, feedNotifier, child) {
+          if (feedNotifier.isLoading && feedNotifier.feeds.isEmpty) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          if (feedRepo.feeds.isEmpty) {
+          if (feedNotifier.feeds.isEmpty) {
             return _buildEmptyState(context);
           }
 
           return RefreshIndicator(
-            onRefresh: feedRepo.refreshAllFeeds,
+            onRefresh: feedNotifier.refreshAllFeeds,
             child: ListView.builder(
               padding: const EdgeInsets.symmetric(vertical: 8),
-              itemCount: feedRepo.feeds.length,
+              itemCount: feedNotifier.feeds.length,
               itemBuilder: (context, index) {
-                final feed = feedRepo.feeds[index];
+                final feed = feedNotifier.feeds[index];
                 return _FeedTile(feed: feed);
               },
             ),
@@ -129,7 +129,7 @@ class _FeedTile extends StatelessWidget {
         );
       },
       onDismissed: (_) {
-        context.read<FeedRepository>().deleteFeed(feed.id);
+        context.read<FeedNotifier>().deleteFeed(feed.id);
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('${feed.title} deleted')));
@@ -190,7 +190,7 @@ class _FeedTile extends StatelessWidget {
         child: Image.network(
           feed.iconUrl!,
           fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => _buildDefaultIcon(),
+          errorBuilder: (context, error, stackTrace) => _buildDefaultIcon(),
         ),
       );
     }

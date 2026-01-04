@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../repositories/repositories.dart';
+import '../notifiers/notifiers.dart';
 
 /// Dialog for adding a new RSS feed.
 class AddFeedDialog extends StatefulWidget {
@@ -91,8 +91,8 @@ class _AddFeedDialogState extends State<AddFeedDialog> {
     });
 
     try {
-      final feedRepo = context.read<FeedRepository>();
-      await feedRepo.addFeed(_urlController.text);
+      final feedNotifier = context.read<FeedNotifier>();
+      await feedNotifier.addFeed(_urlController.text);
 
       if (mounted) {
         Navigator.pop(context);

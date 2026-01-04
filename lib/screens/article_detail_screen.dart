@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../models/models.dart';
-import '../repositories/repositories.dart';
+import '../notifiers/notifiers.dart';
 import 'article_webview.dart';
 
 /// Screen for viewing article content using WebView.
@@ -23,9 +23,9 @@ class ArticleDetailScreen extends StatelessWidget {
         ),
         actions: [
           // Bookmark button
-          Consumer<ArticleRepository>(
-            builder: (context, repo, _) {
-              final currentArticle = repo.getArticle(article.id) ?? article;
+          Consumer<ArticleNotifier>(
+            builder: (context, notifier, _) {
+              final currentArticle = notifier.getArticle(article.id) ?? article;
               return IconButton(
                 icon: Icon(
                   currentArticle.isBookmarked
@@ -36,7 +36,7 @@ class ArticleDetailScreen extends StatelessWidget {
                     ? 'Remove bookmark'
                     : 'Add bookmark',
                 onPressed: () {
-                  repo.toggleBookmark(article.id);
+                  notifier.toggleBookmark(article.id);
                 },
               );
             },

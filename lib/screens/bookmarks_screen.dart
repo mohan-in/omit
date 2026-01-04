@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 
 import '../models/models.dart';
-import '../repositories/repositories.dart';
+import '../notifiers/notifiers.dart';
 import 'article_detail_screen.dart';
 
 /// Screen displaying bookmarked articles.
@@ -14,9 +14,9 @@ class BookmarksScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Bookmarks')),
-      body: Consumer<ArticleRepository>(
-        builder: (context, articleRepo, child) {
-          final bookmarks = articleRepo.getBookmarkedArticles();
+      body: Consumer<ArticleNotifier>(
+        builder: (context, articleNotifier, child) {
+          final bookmarks = articleNotifier.getBookmarkedArticles();
 
           if (bookmarks.isEmpty) {
             return _buildEmptyState(context);
@@ -74,7 +74,7 @@ class BookmarksScreen extends StatelessWidget {
   }
 
   void _removeBookmark(BuildContext context, Article article) {
-    context.read<ArticleRepository>().toggleBookmark(article.id);
+    context.read<ArticleNotifier>().toggleBookmark(article.id);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Removed "${article.title}" from bookmarks')),
     );
@@ -125,7 +125,8 @@ class _BookmarkTile extends StatelessWidget {
                       width: 60,
                       height: 60,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                      errorBuilder: (context, error, stackTrace) =>
+                          const SizedBox.shrink(),
                     ),
                   ),
                   const SizedBox(width: 12),

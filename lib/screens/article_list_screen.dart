@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 
 import '../models/models.dart';
-import '../repositories/repositories.dart';
+import '../notifiers/notifiers.dart';
 import 'article_detail_screen.dart';
 
 /// Screen displaying articles from a specific feed.
@@ -22,7 +22,7 @@ class _ArticleListScreenState extends State<ArticleListScreen> {
     super.initState();
     // Load articles for this feed
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<ArticleRepository>().loadArticlesForFeed(widget.feed.id);
+      context.read<ArticleNotifier>().loadArticlesForFeed(widget.feed.id);
     });
   }
 
@@ -39,13 +39,13 @@ class _ArticleListScreenState extends State<ArticleListScreen> {
           ),
         ],
       ),
-      body: Consumer<ArticleRepository>(
-        builder: (context, articleRepo, child) {
-          if (articleRepo.isLoading) {
+      body: Consumer<ArticleNotifier>(
+        builder: (context, articleNotifier, child) {
+          if (articleNotifier.isLoading) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          if (articleRepo.articles.isEmpty) {
+          if (articleNotifier.articles.isEmpty) {
             return _buildEmptyState();
           }
 
@@ -53,9 +53,9 @@ class _ArticleListScreenState extends State<ArticleListScreen> {
             onRefresh: _refreshFeed,
             child: ListView.builder(
               padding: const EdgeInsets.symmetric(vertical: 8),
-              itemCount: articleRepo.articles.length,
+              itemCount: articleNotifier.articles.length,
               itemBuilder: (context, index) {
-                final article = articleRepo.articles[index];
+                final article = articleNotifier.articles[index];
                 return _ArticleTile(
                   article: article,
                   onTap: () => _openArticle(context, article),
@@ -95,16 +95,20 @@ class _ArticleListScreenState extends State<ArticleListScreen> {
   }
 
   Future<void> _refreshFeed() async {
-    await context.read<FeedRepository>().refreshFeed(widget.feed.id);
+    await context.read<FeedNotifier>().refreshFeed(widget.feed.id);
     if (mounted) {
-      context.read<ArticleRepository>().loadArticlesForFeed(widget.feed.id);
+      context.read<ArticleNotifier>().loadArticlesForFeed(widget.feed.id);
     }
   }
 
   void _openArticle(BuildContext context, Article article) {
-    // Mark as read
-    context.read<ArticleRepository>().markAsRead(article.id);
-    context.read<FeedRepository>().updateUnreadCount(widget.feed.id);
+    // Mark as read and update unread count
+    final articleNotifier = context.read<ArticleNotifier>();
+    final feedNotifier = context.read<FeedNotifier>();
+
+    articleNotifier.markAsRead(article.id);
+    final unreadCount = articleNotifier.getUnreadCount(widget.feed.id);
+    feedNotifier.updateUnreadCount(widget.feed.id, unreadCount);
 
     Navigator.push(
       context,
@@ -142,7 +146,8 @@ class _ArticleTile extends StatelessWidget {
                     width: 80,
                     height: 80,
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                    errorBuilder: (context, error, stackTrace) =>
+                        const SizedBox.shrink(),
                   ),
                 ),
                 const SizedBox(width: 12),

@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:omit/screens/feeds_screen.dart';
 import 'package:omit/repositories/repositories.dart';
+import 'package:omit/notifiers/notifiers.dart';
 import 'package:omit/services/services.dart';
 import 'package:provider/provider.dart';
 
@@ -13,18 +14,24 @@ void main() {
     // Create mock services
     final storageService = StorageService();
     final rssService = RssService();
+
+    // Create repositories
     final feedRepository = FeedRepository(
       rssService: rssService,
       storageService: storageService,
     );
     final articleRepository = ArticleRepository(storageService: storageService);
 
+    // Create notifiers
+    final feedNotifier = FeedNotifier(repository: feedRepository);
+    final articleNotifier = ArticleNotifier(repository: articleRepository);
+
     // Build our app and trigger a frame.
     await tester.pumpWidget(
       MultiProvider(
         providers: [
-          ChangeNotifierProvider.value(value: feedRepository),
-          ChangeNotifierProvider.value(value: articleRepository),
+          ChangeNotifierProvider.value(value: feedNotifier),
+          ChangeNotifierProvider.value(value: articleNotifier),
         ],
         child: const MaterialApp(home: FeedsScreen()),
       ),
