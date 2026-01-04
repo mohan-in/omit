@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:rss_reader/screens/feeds_screen.dart';
-import 'package:rss_reader/repositories/repositories.dart';
-import 'package:rss_reader/services/services.dart';
+import 'package:omit/screens/feeds_screen.dart';
+import 'package:omit/repositories/repositories.dart';
+import 'package:omit/services/services.dart';
 import 'package:provider/provider.dart';
 
 void main() {

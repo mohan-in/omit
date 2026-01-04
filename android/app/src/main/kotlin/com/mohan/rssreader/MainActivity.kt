@@ -1,4 +1,4 @@
-package com.example.rss_reader
+package com.mohan.rssreader
 
 import io.flutter.embedding.android.FlutterActivity
 
