@@ -1,5 +1,8 @@
+import 'dart:convert';
+
 import 'package:http/http.dart' as http;
 import 'package:dart_rss/dart_rss.dart';
+import 'package:html/parser.dart' as html_parser;
 
 import '../models/models.dart';
 
@@ -21,7 +24,8 @@ class RssService {
       throw Exception('Failed to fetch feed: HTTP ${response.statusCode}');
     }
 
-    final body = response.body;
+    // Decode response as UTF-8, with fallback for malformed sequences
+    final body = utf8.decode(response.bodyBytes, allowMalformed: true);
 
     // Try parsing as RSS first, then Atom
     try {
@@ -125,11 +129,13 @@ class RssService {
 
   String? _cleanHtml(String? html) {
     if (html == null) return null;
-    // Simple HTML tag removal for description preview
-    return html
-        .replaceAll(RegExp(r'<[^>]*>'), '')
-        .replaceAll(RegExp(r'\s+'), ' ')
-        .trim();
+
+    // Parse HTML to decode entities and strip tags
+    final document = html_parser.parseFragment(html);
+    final text = document.text ?? '';
+
+    // Normalize whitespace
+    return text.replaceAll(RegExp(r'\s+'), ' ').trim();
   }
 
   DateTime? _parseDate(String? dateStr) {
