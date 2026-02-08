@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:adblocker_webview/adblocker_webview.dart';
 
 import 'services/services.dart';
 import 'repositories/repositories.dart';
@@ -10,25 +11,30 @@ import 'theme/app_theme.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize storage
+  // Initialize services
   final storageService = StorageService();
   await storageService.init();
 
-  // Create services
-  final rssService = RssService();
+  final adBlockService = AdBlockService();
+  await adBlockService.initialize();
 
-  // Create repositories (pure data layer)
+  // Initialize WebView ad blocker (EasyList + AdGuard)
+  await AdBlockerWebviewController.instance.initialize(
+    FilterConfig(filterTypes: [FilterType.easyList, FilterType.adGuard]),
+  );
+
+  final rssService = RssService(adBlockService: adBlockService);
+
+  // Create repositories
   final feedRepository = FeedRepository(
     rssService: rssService,
     storageService: storageService,
   );
   final articleRepository = ArticleRepository(storageService: storageService);
 
-  // Create notifiers (UI state layer)
+  // Create notifiers
   final feedNotifier = FeedNotifier(repository: feedRepository);
   final articleNotifier = ArticleNotifier(repository: articleRepository);
-
-  // Load initial data
   await feedNotifier.loadFeeds();
 
   runApp(

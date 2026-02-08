@@ -4,13 +4,17 @@ import 'package:http/http.dart' as http;
 import 'package:dart_rss/dart_rss.dart';
 import 'package:html/parser.dart' as html_parser;
 
+import 'ad_block_service.dart';
 import '../models/models.dart';
 
 /// Service for fetching and parsing RSS/Atom feeds.
 class RssService {
   final http.Client _client;
+  final AdBlockService? _adBlockService;
 
-  RssService({http.Client? client}) : _client = client ?? http.Client();
+  RssService({http.Client? client, AdBlockService? adBlockService})
+    : _client = client ?? http.Client(),
+      _adBlockService = adBlockService;
 
   /// Fetches and parses an RSS or Atom feed from the given URL.
   /// Returns a tuple of (Feed metadata, List of Articles).
@@ -130,8 +134,14 @@ class RssService {
   String? _cleanHtml(String? html) {
     if (html == null) return null;
 
+    // First, filter out ad content if ad blocking is enabled
+    var filteredHtml = html;
+    if (_adBlockService != null) {
+      filteredHtml = _adBlockService.filterContent(html);
+    }
+
     // Parse HTML to decode entities and strip tags
-    final document = html_parser.parseFragment(html);
+    final document = html_parser.parseFragment(filteredHtml);
     final text = document.text ?? '';
 
     // Normalize whitespace

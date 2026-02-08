@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:webview_flutter/webview_flutter.dart';
+import 'package:adblocker_webview/adblocker_webview.dart';
 
-/// WebView widget for displaying article content on mobile platforms.
+/// WebView widget for displaying article content with ad blocking.
 class ArticleWebView extends StatefulWidget {
   final String url;
 
@@ -12,48 +12,71 @@ class ArticleWebView extends StatefulWidget {
 }
 
 class _ArticleWebViewState extends State<ArticleWebView> {
-  late final WebViewController _controller;
   bool _isLoading = true;
-  double _loadingProgress = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = WebViewController()
-      ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      ..setNavigationDelegate(
-        NavigationDelegate(
-          onProgress: (int progress) {
-            setState(() {
-              _loadingProgress = progress / 100;
-            });
-          },
-          onPageStarted: (String url) {
-            setState(() {
-              _isLoading = true;
-            });
-          },
-          onPageFinished: (String url) {
-            setState(() {
-              _isLoading = false;
-            });
-          },
-          onWebResourceError: (WebResourceError error) {
-            debugPrint('WebView error: ${error.description}');
-          },
-        ),
-      )
-      ..loadRequest(Uri.parse(widget.url));
-  }
+  double _progress = 0;
 
   @override
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        WebViewWidget(controller: _controller),
+        // WebView (always rendered but may be hidden)
+        Opacity(
+          opacity: _isLoading ? 0 : 1,
+          child: AdBlockerWebview(
+            url: Uri.parse(widget.url),
+            shouldBlockAds: true,
+            adBlockerWebviewController: AdBlockerWebviewController.instance,
+            onLoadStart: (url) {
+              setState(() {
+                _isLoading = true;
+                _progress = 0;
+              });
+            },
+            onProgress: (progress) {
+              setState(() {
+                _progress = progress / 100;
+              });
+            },
+            onLoadFinished: (url) {
+              // Small delay to let cosmetic filtering complete
+              Future.delayed(const Duration(milliseconds: 300), () {
+                if (mounted) {
+                  setState(() {
+                    _isLoading = false;
+                  });
+                }
+              });
+            },
+            onLoadError: (url, code) {
+              debugPrint('Error loading $url: $code');
+              if (mounted) {
+                setState(() {
+                  _isLoading = false;
+                });
+              }
+            },
+          ),
+        ),
+
+        // Loading overlay
         if (_isLoading)
-          LinearProgressIndicator(
-            value: _loadingProgress > 0 ? _loadingProgress : null,
+          Container(
+            color: Theme.of(context).scaffoldBackgroundColor,
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(
+                    value: _progress > 0 ? _progress : null,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Loading article...',
+                    style: TextStyle(color: Colors.grey.shade600),
+                  ),
+                ],
+              ),
+            ),
           ),
       ],
     );
