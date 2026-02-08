@@ -24,13 +24,14 @@ class FeedAdapter extends TypeAdapter<Feed> {
       iconUrl: fields[4] as String?,
       lastUpdated: fields[5] as DateTime?,
       unreadCount: fields[6] as int,
+      order: fields[7] as int,
     );
   }
 
   @override
   void write(BinaryWriter writer, Feed obj) {
     writer
-      ..writeByte(7)
+      ..writeByte(8)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -44,7 +45,9 @@ class FeedAdapter extends TypeAdapter<Feed> {
       ..writeByte(5)
       ..write(obj.lastUpdated)
       ..writeByte(6)
-      ..write(obj.unreadCount);
+      ..write(obj.unreadCount)
+      ..writeByte(7)
+      ..write(obj.order);
   }
 
   @override

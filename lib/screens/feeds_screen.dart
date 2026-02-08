@@ -8,9 +8,14 @@ import 'article_list_screen.dart';
 import 'bookmarks_screen.dart';
 
 /// Main screen displaying all subscribed RSS feeds.
-class FeedsScreen extends StatelessWidget {
+class FeedsScreen extends StatefulWidget {
   const FeedsScreen({super.key});
 
+  @override
+  State<FeedsScreen> createState() => _FeedsScreenState();
+}
+
+class _FeedsScreenState extends State<FeedsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -41,12 +46,15 @@ class FeedsScreen extends StatelessWidget {
 
           return RefreshIndicator(
             onRefresh: feedNotifier.refreshAllFeeds,
-            child: ListView.builder(
+            child: ReorderableListView.builder(
               padding: const EdgeInsets.symmetric(vertical: 8),
               itemCount: feedNotifier.feeds.length,
+              onReorder: (oldIndex, newIndex) {
+                feedNotifier.reorderFeeds(oldIndex, newIndex);
+              },
               itemBuilder: (context, index) {
                 final feed = feedNotifier.feeds[index];
-                return _FeedTile(feed: feed);
+                return _FeedTile(key: ValueKey(feed.id), feed: feed);
               },
             ),
           );
@@ -95,7 +103,7 @@ class FeedsScreen extends StatelessWidget {
 class _FeedTile extends StatelessWidget {
   final Feed feed;
 
-  const _FeedTile({required this.feed});
+  const _FeedTile({super.key, required this.feed});
 
   @override
   Widget build(BuildContext context) {

@@ -89,4 +89,11 @@ class FeedRepository {
   int getUnreadCount(String feedId) {
     return _storageService.getUnreadCount(feedId);
   }
+
+  /// Save all feeds (used for reordering).
+  Future<void> saveAllFeeds(List<Feed> feeds) async {
+    for (final feed in feeds) {
+      await _storageService.saveFeed(feed);
+    }
+  }
 }

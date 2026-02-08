@@ -26,6 +26,9 @@ class Feed extends HiveObject {
   @HiveField(6)
   int unreadCount;
 
+  @HiveField(7)
+  int order;
+
   Feed({
     required this.id,
     required this.title,
@@ -34,6 +37,7 @@ class Feed extends HiveObject {
     this.iconUrl,
     this.lastUpdated,
     this.unreadCount = 0,
+    this.order = 0,
   });
 
   /// Creates a Feed from RSS feed metadata.
@@ -61,6 +65,7 @@ class Feed extends HiveObject {
     String? iconUrl,
     DateTime? lastUpdated,
     int? unreadCount,
+    int? order,
   }) {
     return Feed(
       id: id ?? this.id,
@@ -70,6 +75,7 @@ class Feed extends HiveObject {
       iconUrl: iconUrl ?? this.iconUrl,
       lastUpdated: lastUpdated ?? this.lastUpdated,
       unreadCount: unreadCount ?? this.unreadCount,
+      order: order ?? this.order,
     );
   }
 }

@@ -27,6 +27,8 @@ class FeedNotifier extends ChangeNotifier {
 
     try {
       _feeds = await _repository.loadFeeds();
+      // Sort feeds by order
+      _feeds.sort((a, b) => a.order.compareTo(b.order));
     } catch (e) {
       _error = 'Failed to load feeds: $e';
     } finally {
@@ -124,5 +126,23 @@ class FeedNotifier extends ChangeNotifier {
       _feeds[index].unreadCount = count;
       notifyListeners();
     }
+  }
+
+  /// Reorder feeds by moving item from oldIndex to newIndex.
+  Future<void> reorderFeeds(int oldIndex, int newIndex) async {
+    // Adjust newIndex for removal
+    if (newIndex > oldIndex) newIndex--;
+
+    final feed = _feeds.removeAt(oldIndex);
+    _feeds.insert(newIndex, feed);
+
+    // Update order field for all feeds
+    for (var i = 0; i < _feeds.length; i++) {
+      _feeds[i].order = i;
+    }
+
+    // Persist the new order
+    await _repository.saveAllFeeds(_feeds);
+    notifyListeners();
   }
 }
