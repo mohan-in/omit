@@ -65,7 +65,7 @@ class RssService {
       title: rssFeed.title ?? 'Untitled Feed',
       url: url,
       description: rssFeed.description,
-      iconUrl: rssFeed.image?.url,
+      iconUrl: rssFeed.image?.url ?? _getFaviconUrl(url),
       lastUpdated: DateTime.now(),
     );
 
@@ -105,7 +105,7 @@ class RssService {
       title: atomFeed.title ?? 'Untitled Feed',
       url: url,
       description: atomFeed.subtitle,
-      iconUrl: atomFeed.icon ?? atomFeed.logo,
+      iconUrl: atomFeed.icon ?? atomFeed.logo ?? _getFaviconUrl(url),
       lastUpdated: DateTime.now(),
     );
 
@@ -129,6 +129,20 @@ class RssService {
     }
 
     return (feed, articles);
+  }
+
+  /// Get favicon URL from a website URL.
+  ///
+  /// Uses Google's favicon service for reliable icon fetching.
+  String _getFaviconUrl(String url) {
+    try {
+      final uri = Uri.parse(url);
+      final domain = uri.host;
+      // Google's favicon service - reliable and handles most sites
+      return 'https://www.google.com/s2/favicons?domain=$domain&sz=64';
+    } catch (_) {
+      return '';
+    }
   }
 
   String? _cleanHtml(String? html) {

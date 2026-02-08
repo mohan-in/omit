@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:adblocker_webview/adblocker_webview.dart';
+import 'package:webview_flutter/webview_flutter.dart';
 
-/// WebView widget for displaying article content with ad blocking.
+/// WebView widget for displaying article content with privacy protection.
+///
+/// Features:
+/// - Ad blocking via adblocker_webview (EasyList + AdGuard filters)
+/// - Privacy protection: clears cookies, cache, localStorage on each load
+/// - Loading overlay to hide cosmetic filtering flash
 class ArticleWebView extends StatefulWidget {
   final String url;
 
@@ -12,8 +18,42 @@ class ArticleWebView extends StatefulWidget {
 }
 
 class _ArticleWebViewState extends State<ArticleWebView> {
+  /// Delay before revealing page to let cosmetic filtering complete.
+  static const _cosmeticFilterDelay = Duration(milliseconds: 300);
+
   bool _isLoading = true;
   double _progress = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _clearBrowsingData();
+  }
+
+  /// Clear all browsing data to prevent tracking.
+  Future<void> _clearBrowsingData() async {
+    // Clear cookies
+    await WebViewCookieManager().clearCookies();
+
+    // Clear cache via controller
+    try {
+      await AdBlockerWebviewController.instance.clearCache();
+    } catch (_) {
+      // Ignore if not available
+    }
+  }
+
+  /// JavaScript to clear all client-side storage.
+  static const _clearStorageScript = '''
+    try {
+      localStorage.clear();
+      sessionStorage.clear();
+    } catch(e) {}
+  ''';
+
+  void _runStorageClearScript() {
+    AdBlockerWebviewController.instance.runScript(_clearStorageScript);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -38,12 +78,13 @@ class _ArticleWebViewState extends State<ArticleWebView> {
               });
             },
             onLoadFinished: (url) {
-              // Small delay to let cosmetic filtering complete
-              Future.delayed(const Duration(milliseconds: 300), () {
+              // Clear client-side storage on each page load
+              _runStorageClearScript();
+
+              // Delay reveal to let cosmetic filtering complete
+              Future.delayed(_cosmeticFilterDelay, () {
                 if (mounted) {
-                  setState(() {
-                    _isLoading = false;
-                  });
+                  setState(() => _isLoading = false);
                 }
               });
             },
