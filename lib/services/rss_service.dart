@@ -62,9 +62,9 @@ class RssService {
 
     final feed = Feed(
       id: feedId,
-      title: rssFeed.title ?? 'Untitled Feed',
+      title: _sanitizeText(rssFeed.title) ?? 'Untitled Feed',
       url: url,
-      description: rssFeed.description,
+      description: _sanitizeText(rssFeed.description),
       iconUrl: rssFeed.image?.url ?? _getFaviconUrl(url),
       lastUpdated: DateTime.now(),
     );
@@ -76,11 +76,11 @@ class RssService {
       final article = Article(
         id: Article.generateId(feedId, item.link!),
         feedId: feedId,
-        title: item.title ?? 'Untitled',
+        title: _sanitizeText(item.title) ?? 'Untitled',
         link: item.link!,
-        description: _cleanHtml(item.description),
-        content: _cleanHtml(item.content?.value),
-        author: item.author ?? item.dc?.creator,
+        description: _sanitizeContent(item.description),
+        content: _sanitizeContent(item.content?.value),
+        author: _sanitizeText(item.author ?? item.dc?.creator),
         pubDate: _parseDate(item.pubDate),
         imageUrl: _extractImageUrl(item),
       );
@@ -102,9 +102,9 @@ class RssService {
 
     final feed = Feed(
       id: feedId,
-      title: atomFeed.title ?? 'Untitled Feed',
+      title: _sanitizeText(atomFeed.title) ?? 'Untitled Feed',
       url: url,
-      description: atomFeed.subtitle,
+      description: _sanitizeText(atomFeed.subtitle),
       iconUrl: atomFeed.icon ?? atomFeed.logo ?? _getFaviconUrl(url),
       lastUpdated: DateTime.now(),
     );
@@ -117,11 +117,13 @@ class RssService {
       final article = Article(
         id: Article.generateId(feedId, link),
         feedId: feedId,
-        title: entry.title ?? 'Untitled',
+        title: _sanitizeText(entry.title) ?? 'Untitled',
         link: link,
-        description: _cleanHtml(entry.summary),
-        content: _cleanHtml(entry.content),
-        author: entry.authors.isNotEmpty ? entry.authors.first.name : null,
+        description: _sanitizeContent(entry.summary),
+        content: _sanitizeContent(entry.content),
+        author: entry.authors.isNotEmpty
+            ? _sanitizeText(entry.authors.first.name)
+            : null,
         pubDate: _parseDate(entry.updated ?? entry.published),
         imageUrl: _extractAtomImageUrl(entry),
       );
@@ -145,7 +147,25 @@ class RssService {
     }
   }
 
-  String? _cleanHtml(String? html) {
+  /// Sanitizes text by stripping HTML tags and decoding entities.
+  String? _sanitizeText(String? html) {
+    if (html == null) return null;
+    try {
+      final document = html_parser.parseFragment(html);
+      var text = document.text?.trim() ?? '';
+      // Fix for double-escaped non-breaking spaces or persisting ones
+      if (text.contains('&nbsp;')) {
+        text = text.replaceAll('&nbsp;', ' ');
+      }
+      return text;
+    } catch (_) {
+      return html;
+    }
+  }
+
+  /// Sanitizes content by filtering ads and then stripping HTML tags.
+  /// Used for description and content preview.
+  String? _sanitizeContent(String? html) {
     if (html == null) return null;
 
     // First, filter out ad content if ad blocking is enabled
@@ -154,12 +174,7 @@ class RssService {
       filteredHtml = _adBlockService.filterContent(html);
     }
 
-    // Parse HTML to decode entities and strip tags
-    final document = html_parser.parseFragment(filteredHtml);
-    final text = document.text ?? '';
-
-    // Normalize whitespace
-    return text.replaceAll(RegExp(r'\s+'), ' ').trim();
+    return _sanitizeText(filteredHtml);
   }
 
   DateTime? _parseDate(String? dateStr) {

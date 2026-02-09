@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../models/models.dart';
 import '../notifiers/notifiers.dart';
+import '../services/services.dart';
 import 'article_webview.dart';
 import 'reader_mode_view.dart';
 
@@ -22,10 +23,25 @@ class ArticleDetailScreen extends StatefulWidget {
 }
 
 class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
-  bool _useReaderMode = false;
+  late bool _useReaderMode;
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize with persisted preference for this feed
+    final storageService = context.read<StorageService>();
+    _useReaderMode = storageService.getFeedReaderMode(widget.article.feedId);
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (_useReaderMode) {
+      return ReaderModeView(
+        article: widget.article,
+        actions: _buildActions(context),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -33,52 +49,56 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
-        actions: [
-          // Reader mode toggle
-          IconButton(
-            icon: Icon(_useReaderMode ? Icons.web : Icons.article),
-            tooltip: _useReaderMode ? 'Web view' : 'Reader mode',
-            onPressed: () {
-              setState(() {
-                _useReaderMode = !_useReaderMode;
-              });
-            },
-          ),
-          // Bookmark button
-          Consumer<ArticleNotifier>(
-            builder: (context, notifier, _) {
-              final currentArticle =
-                  notifier.getArticle(widget.article.id) ?? widget.article;
-              return IconButton(
-                icon: Icon(
-                  currentArticle.isBookmarked
-                      ? Icons.bookmark
-                      : Icons.bookmark_border,
-                ),
-                tooltip: currentArticle.isBookmarked
-                    ? 'Remove bookmark'
-                    : 'Add bookmark',
-                onPressed: () {
-                  notifier.toggleBookmark(widget.article.id);
-                },
-              );
-            },
-          ),
-          // Open in browser
-          IconButton(
-            icon: const Icon(Icons.open_in_browser),
-            tooltip: 'Open in browser',
-            onPressed: () => _openInBrowser(context),
-          ),
-        ],
+        actions: _buildActions(context),
       ),
-      body: _useReaderMode
-          ? ReaderModeView(
-              url: widget.article.link,
-              fallbackTitle: widget.article.title,
-            )
-          : ArticleWebView(url: widget.article.link),
+      body: ArticleWebView(url: widget.article.link),
     );
+  }
+
+  List<Widget> _buildActions(BuildContext context) {
+    return [
+      // Reader mode toggle
+      IconButton(
+        icon: Icon(_useReaderMode ? Icons.web : Icons.article),
+        tooltip: _useReaderMode ? 'Web view' : 'Reader mode',
+        onPressed: () {
+          setState(() {
+            _useReaderMode = !_useReaderMode;
+          });
+          // Persist preference for this feed
+          context.read<StorageService>().setFeedReaderMode(
+            widget.article.feedId,
+            _useReaderMode,
+          );
+        },
+      ),
+      // Bookmark button
+      Consumer<ArticleNotifier>(
+        builder: (context, notifier, _) {
+          final currentArticle =
+              notifier.getArticle(widget.article.id) ?? widget.article;
+          return IconButton(
+            icon: Icon(
+              currentArticle.isBookmarked
+                  ? Icons.bookmark
+                  : Icons.bookmark_border,
+            ),
+            tooltip: currentArticle.isBookmarked
+                ? 'Remove bookmark'
+                : 'Add bookmark',
+            onPressed: () {
+              notifier.toggleBookmark(widget.article.id);
+            },
+          );
+        },
+      ),
+      // Open in browser
+      IconButton(
+        icon: const Icon(Icons.open_in_browser),
+        tooltip: 'Open in browser',
+        onPressed: () => _openInBrowser(context),
+      ),
+    ];
   }
 
   Future<void> _openInBrowser(BuildContext context) async {

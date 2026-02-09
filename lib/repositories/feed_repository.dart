@@ -58,14 +58,29 @@ class FeedRepository {
       existingFeedId: feedId,
     );
 
-    // Save updated articles (only new ones)
+    // Save updated articles, merging with existing state (isRead, isBookmarked)
     final existingArticles = _storageService.getArticlesForFeed(feedId);
-    final existingIds = existingArticles.map((a) => a.id).toSet();
+    final existingArticlesMap = {for (var a in existingArticles) a.id: a};
 
-    final newArticles = articles
-        .where((a) => !existingIds.contains(a.id))
-        .toList();
-    await _storageService.saveArticles(newArticles);
+    final articlesToSave = <Article>[];
+
+    for (final newArticle in articles) {
+      final existingArticle = existingArticlesMap[newArticle.id];
+      if (existingArticle != null) {
+        // Merge: keep new content but preserve local state
+        articlesToSave.add(
+          newArticle.copyWith(
+            isRead: existingArticle.isRead,
+            isBookmarked: existingArticle.isBookmarked,
+          ),
+        );
+      } else {
+        // New article
+        articlesToSave.add(newArticle);
+      }
+    }
+
+    await _storageService.saveArticles(articlesToSave);
 
     // Update feed metadata
     updatedFeed.unreadCount = _storageService.getUnreadCount(feedId);

@@ -2,3 +2,4 @@
 library;
 
 export 'add_feed_dialog.dart';
+export 'cached_image.dart';

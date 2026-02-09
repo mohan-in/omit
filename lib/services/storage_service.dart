@@ -6,9 +6,11 @@ import '../models/models.dart';
 class StorageService {
   static const String _feedsBoxName = 'feeds';
   static const String _articlesBoxName = 'articles';
+  static const String _settingsBoxName = 'settings';
 
   Box<Feed>? _feedsBox;
   Box<Article>? _articlesBox;
+  Box? _settingsBox;
 
   bool _isInitialized = false;
 
@@ -29,6 +31,7 @@ class StorageService {
     // Open boxes
     _feedsBox = await Hive.openBox<Feed>(_feedsBoxName);
     _articlesBox = await Hive.openBox<Article>(_articlesBoxName);
+    _settingsBox = await Hive.openBox(_settingsBoxName);
 
     _isInitialized = true;
   }
@@ -144,6 +147,20 @@ class StorageService {
         .length;
   }
 
+  // ============ Settings Operations ============
+
+  /// Get reader mode preference for a feed.
+  bool getFeedReaderMode(String feedId) {
+    _ensureInitialized();
+    return _settingsBox!.get('reader_mode_$feedId', defaultValue: false);
+  }
+
+  /// Set reader mode preference for a feed.
+  Future<void> setFeedReaderMode(String feedId, bool isEnabled) async {
+    _ensureInitialized();
+    await _settingsBox!.put('reader_mode_$feedId', isEnabled);
+  }
+
   // ============ Helpers ============
 
   void _ensureInitialized() {
@@ -157,12 +174,14 @@ class StorageService {
     _ensureInitialized();
     await _feedsBox!.clear();
     await _articlesBox!.clear();
+    await _settingsBox!.clear();
   }
 
   /// Close all boxes.
   Future<void> close() async {
     await _feedsBox?.close();
     await _articlesBox?.close();
+    await _settingsBox?.close();
     _isInitialized = false;
   }
 }

@@ -82,6 +82,7 @@ lib/
 │   └── screens.dart       # Barrel export
 ├── widgets/               # Reusable widgets
 │   ├── add_feed_dialog.dart
+│   ├── cached_image.dart  # Optimized image with caching & error handling
 │   └── widgets.dart       # Barrel export
 └── theme/                 # App theming
     └── app_theme.dart
@@ -122,8 +123,9 @@ Handles fetching and parsing RSS/Atom feeds.
 
 **Internal Helpers:**
 - `_parseRssFeed()` / `_parseAtomFeed()` - Format-specific parsing
-- `_cleanHtml()` - Strip HTML tags from content
-- `_parseDate()` / `_parseRfc822Date()` - Date parsing
+- `_sanitizeText()` - Global HTML sanitization (decodes entities, strips tags)
+- `_sanitizeContent()` - Filters ads and sanitizes HTML content
+- `_parseDate()` - Date parsing
 - `_extractImageUrl()` - Extract images from feed items
 
 #### [StorageService](file:///home/mohan/Flutter/projects/omit/lib/services/storage_service.dart)
@@ -135,6 +137,7 @@ Manages local Hive storage.
 | Feed Operations | `getAllFeeds()`, `getFeed()`, `saveFeed()`, `deleteFeed()` |
 | Article Operations | `getArticlesForFeed()`, `getArticle()`, `saveArticle()`, `saveArticles()` |
 | State Management | `markAsRead()`, `toggleBookmark()`, `getBookmarkedArticles()` |
+| Settings | `getFeedReaderMode()`, `setFeedReaderMode()` - Per-feed reader preference |
 | Utilities | `init()`, `clearAll()`, `close()` |
 
 ---
@@ -190,7 +193,7 @@ UI state management using `ChangeNotifier` pattern.
 | `deleteFeed(feedId)` | Delete a feed |
 | `updateUnreadCount(feedId, count)` | Update unread badge |
 
-#### [ArticleNotifier](file:///home/mohan/Flutter/projects/omit/lib/notifiers/article_notifier.dart)
+#### [ArticleNotifier](lib/notifiers/article_notifier.dart)
 
 | Property | Type | Description |
 |----------|------|-------------|
@@ -212,16 +215,17 @@ UI state management using `ChangeNotifier` pattern.
 
 | Screen | Description |
 |--------|-------------|
-| [FeedsScreen](file:///home/mohan/Flutter/projects/omit/lib/screens/feeds_screen.dart) | Main screen - list of subscribed feeds |
-| [ArticleListScreen](file:///home/mohan/Flutter/projects/omit/lib/screens/article_list_screen.dart) | Articles from a selected feed |
-| [ArticleDetailScreen](file:///home/mohan/Flutter/projects/omit/lib/screens/article_detail_screen.dart) | Article viewer with WebView |
-| [BookmarksScreen](file:///home/mohan/Flutter/projects/omit/lib/screens/bookmarks_screen.dart) | Saved bookmarks |
+| [FeedsScreen](lib/screens/feeds_screen.dart) | Main screen - list of subscribed feeds |
+| [ArticleListScreen](lib/screens/article_list_screen.dart) | Articles from a selected feed |
+| [ArticleDetailScreen](lib/screens/article_detail_screen.dart) | Container for article viewing (toggles WebView/Reader) |
+| [ReaderModeView](lib/screens/reader_mode_view.dart) | Clean, text-focused article reader |
+| [BookmarksScreen](lib/screens/bookmarks_screen.dart) | Saved bookmarks |
 
 ---
 
 ## Dependency Injection
 
-Dependencies are wired up in [main.dart](file:///home/mohan/Flutter/projects/omit/lib/main.dart):
+Dependencies are wired up in [main.dart](lib/main.dart):
 
 ```dart
 void main() async {
@@ -311,6 +315,12 @@ sequenceDiagram
 **Problem:** Import paths become unwieldy.
 
 **Solution:** Each folder has a barrel file (e.g., `models.dart`) for clean imports.
+
+### 5. Global HTML Sanitization
+
+**Problem:** HTML entities (e.g., `&amp;`) appearing in UI text fields (titles, authors).
+
+**Solution:** Sanitize all text fields at the ingestion point (`RssService`). This ensures all UI components display clean text without needing ad-hoc decoding logic handling.
 
 ---
 
