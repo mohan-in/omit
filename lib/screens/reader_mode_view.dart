@@ -3,8 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_html/flutter_html.dart';
 import 'package:intl/intl.dart';
 import 'package:omit/models/models.dart';
+import 'package:omit/notifiers/notifiers.dart';
 import 'package:omit/widgets/cached_image.dart';
-import 'package:readability/readability.dart' as readability;
+import 'package:provider/provider.dart';
 
 /// Widget that displays article content in reader mode.
 ///
@@ -21,89 +22,78 @@ class ReaderModeView extends StatefulWidget {
 }
 
 class _ReaderModeViewState extends State<ReaderModeView> {
-  bool _isLoading = true;
-  String? _error;
-  String? _parsedTitle;
-  String _content = '';
-
   @override
   void initState() {
     super.initState();
-    unawaited(_loadArticle());
-  }
+    // Load article content if needed
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final notifier = context.read<ArticleNotifier>();
+      final article = notifier.getArticle(widget.article.id) ?? widget.article;
 
-  Future<void> _loadArticle() async {
-    try {
-      final article = await readability.parseAsync(widget.article.link);
-
-      if (mounted) {
-        setState(() {
-          _parsedTitle = article.title;
-          _content = article.content ?? '';
-          _isLoading = false;
-        });
+      if (article.content == null) {
+        unawaited(notifier.loadArticleContent(article.id));
       }
-    } on Exception catch (e) {
-      if (mounted) {
-        setState(() {
-          _error = 'Failed to load article: $e';
-          _isLoading = false;
-        });
-      }
-    }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
+    // Watch for changes to the article (specifically content/author)
+    final article = context.select<ArticleNotifier, Article>(
+      (notifier) => notifier.getArticle(widget.article.id) ?? widget.article,
+    );
+
+    // If we're still loading the initial content (and no error handling yet in
+    // notifier for this view) we can show a loader if content is null, OR show
+    // partial content.
+    // Ideally notifier would expose loading state per article or we rely on
+    // content null check.
+    // For now, if content is null after init, we can assume it's loading.
+
     return Scaffold(
       body: CustomScrollView(
         slivers: [
-          _buildAppBar(),
-          if (_error != null)
-            SliverFillRemaining(child: _buildErrorView())
-          else
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 24,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildHeader(),
-                    if (_isLoading)
-                      const Padding(
-                        padding: EdgeInsets.only(top: 40),
-                        child: Center(child: CircularProgressIndicator()),
-                      )
-                    else
-                      _buildContent(),
-                  ],
-                ),
+          _buildAppBar(article),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildHeader(article),
+                  if (article.content == null)
+                    const Padding(
+                      padding: EdgeInsets.only(top: 40),
+                      child: Center(child: CircularProgressIndicator()),
+                    )
+                  else
+                    _buildContent(article),
+                ],
               ),
             ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildAppBar() {
+  Widget _buildAppBar(Article article) {
     return SliverAppBar(
-      expandedHeight: widget.article.imageUrl != null ? 300 : kToolbarHeight,
+      expandedHeight: article.imageUrl != null ? 300 : kToolbarHeight,
       pinned: true,
       actions: widget.actions,
-      title: widget.article.imageUrl == null
+      title: article.imageUrl == null
           ? Text(
-              _parsedTitle ?? widget.article.title,
+              article.title,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             )
           : null,
-      flexibleSpace: widget.article.imageUrl != null
+      flexibleSpace: article.imageUrl != null
           ? FlexibleSpaceBar(
               background: CachedImage(
-                imageUrl: widget.article.imageUrl!,
+                imageUrl: article.imageUrl!,
                 width: double.infinity,
                 height: 300,
                 // fit: BoxFit.cover, // default is cover
@@ -113,7 +103,7 @@ class _ReaderModeViewState extends State<ReaderModeView> {
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(Article article) {
     final theme = Theme.of(context);
     final dateFormat = DateFormat.yMMMMd().add_jm();
 
@@ -121,7 +111,7 @@ class _ReaderModeViewState extends State<ReaderModeView> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          _parsedTitle ?? widget.article.title,
+          article.title,
           style: theme.textTheme.headlineMedium?.copyWith(
             fontWeight: FontWeight.bold,
             height: 1.3,
@@ -131,8 +121,7 @@ class _ReaderModeViewState extends State<ReaderModeView> {
         const SizedBox(height: 16),
         Row(
           children: [
-            if (widget.article.author != null &&
-                widget.article.author!.isNotEmpty) ...[
+            if (article.author != null && article.author!.isNotEmpty) ...[
               CircleAvatar(
                 radius: 12,
                 backgroundColor: theme.colorScheme.primaryContainer,
@@ -145,7 +134,7 @@ class _ReaderModeViewState extends State<ReaderModeView> {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  widget.article.author!,
+                  article.author!,
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                     fontWeight: FontWeight.w500,
@@ -156,9 +145,9 @@ class _ReaderModeViewState extends State<ReaderModeView> {
               ),
               const SizedBox(width: 16),
             ],
-            if (widget.article.pubDate != null)
+            if (article.pubDate != null)
               Text(
-                dateFormat.format(widget.article.pubDate!),
+                dateFormat.format(article.pubDate!),
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
@@ -172,9 +161,9 @@ class _ReaderModeViewState extends State<ReaderModeView> {
     );
   }
 
-  Widget _buildContent() {
+  Widget _buildContent(Article article) {
     return Html(
-      data: _content,
+      data: article.content,
       style: <String, Style>{
         'body': Style(
           fontSize: FontSize(18),
@@ -223,38 +212,6 @@ class _ReaderModeViewState extends State<ReaderModeView> {
         'video': Style(display: Display.none),
         'audio': Style(display: Display.none),
       },
-    );
-  }
-
-  Widget _buildErrorView() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.error_outline, size: 48, color: Colors.red.shade300),
-            const SizedBox(height: 16),
-            Text(
-              _error!,
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey.shade600),
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: () {
-                setState(() {
-                  _isLoading = true;
-                  _error = null;
-                });
-                unawaited(_loadArticle());
-              },
-              icon: const Icon(Icons.refresh),
-              label: const Text('Retry'),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

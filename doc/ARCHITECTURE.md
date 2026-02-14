@@ -24,21 +24,21 @@ The app follows a **layered Clean Architecture** pattern with clear separation o
 
 ```mermaid
 flowchart TB
-    subgraph Presentation["Presentation Layer"]
+    subgraph Presentation [Presentation Layer]
         Screens["Screens"]
         Widgets["Widgets"]
         Theme["Theme"]
     end
     
-    subgraph State["State Management"]
+    subgraph State [State Management]
         Notifiers["Notifiers (ChangeNotifier)"]
     end
     
-    subgraph Domain["Data Layer"]
+    subgraph Domain [Data Layer]
         Repositories["Repositories"]
     end
     
-    subgraph Infrastructure["Infrastructure Layer"]
+    subgraph Infrastructure [Infrastructure Layer]
         Services["Services"]
         Models["Models"]
     end
@@ -48,7 +48,16 @@ flowchart TB
     Notifiers --> Repositories
     Repositories --> Services
     Services --> Models
+
+    linkStyle default stroke-width:2px,fill:none,stroke:gray;
 ```
+
+**Strict Layering Rules:**
+1.  **UI (Screens/Widgets)** must ONLY interact with **Notifiers**.
+2.  **Notifiers** must ONLY interact with **Repositories**.
+3.  **Repositories** must ONLY interact with **Services** and **Models**.
+4.  **Services** interact with external data sources (network, storage).
+5.  **UI** should NEVER access **Repositories** or **Services** directly.
 
 ---
 
@@ -98,8 +107,8 @@ Domain entities persisted with Hive for offline storage.
 
 | Model | Description | Hive TypeId |
 |-------|-------------|-------------|
-| [Feed](file:///home/mohan/Flutter/projects/omit/lib/models/feed.dart) | RSS/Atom feed subscription | 0 |
-| [Article](file:///home/mohan/Flutter/projects/omit/lib/models/article.dart) | Individual feed item/article | 1 |
+| [Feed](../lib/models/feed.dart) | RSS/Atom feed subscription | 0 |
+| [Article](../lib/models/article.dart) | Individual feed item/article | 1 |
 
 **Key Features:**
 - `@HiveType` and `@HiveField` annotations for serialization
@@ -112,7 +121,7 @@ Domain entities persisted with Hive for offline storage.
 
 Low-level infrastructure services handling external I/O.
 
-#### [RssService](file:///home/mohan/Flutter/projects/omit/lib/services/rss_service.dart)
+#### [RssService](../lib/services/rss_service.dart)
 
 Handles fetching and parsing RSS/Atom feeds.
 
@@ -128,7 +137,7 @@ Handles fetching and parsing RSS/Atom feeds.
 - `_parseDate()` - Date parsing
 - `_extractImageUrl()` - Extract images from feed items
 
-#### [StorageService](file:///home/mohan/Flutter/projects/omit/lib/services/storage_service.dart)
+#### [StorageService](../lib/services/storage_service.dart)
 
 Manages local Hive storage.
 
@@ -140,6 +149,14 @@ Manages local Hive storage.
 | Settings | `getFeedReaderMode()`, `setFeedReaderMode()` - Per-feed reader preference |
 | Utilities | `init()`, `clearAll()`, `close()` |
 
+#### [ReaderService](../lib/services/reader_service.dart)
+
+Handles parsing article content from URLs using `readability`.
+
+| Method | Purpose |
+|--------|---------|
+| `parseArticle(url)` | Parse article content, returns `(title, content, author)` |
+
 ---
 
 ### Repositories
@@ -149,7 +166,7 @@ Pure data layer bridging services and notifiers.
 > [!NOTE]
 > Repositories are pure data access objects with **no UI state** (no `ChangeNotifier`).
 
-#### [FeedRepository](file:///home/mohan/Flutter/projects/omit/lib/repositories/feed_repository.dart)
+#### [FeedRepository](../lib/repositories/feed_repository.dart)
 
 | Method | Description |
 |--------|-------------|
@@ -158,7 +175,7 @@ Pure data layer bridging services and notifiers.
 | `refreshFeed(feedId)` | Refresh feed articles |
 | `deleteFeed(feedId)` | Delete feed and its articles |
 
-#### [ArticleRepository](file:///home/mohan/Flutter/projects/omit/lib/repositories/article_repository.dart)
+#### [ArticleRepository](../lib/repositories/article_repository.dart)
 
 | Method | Description |
 |--------|-------------|
@@ -176,10 +193,10 @@ UI state management using `ChangeNotifier` pattern.
 > [!TIP]
 > Notifiers manage loading states, errors, and cached data lists for efficient UI updates.
 
-#### [FeedNotifier](file:///home/mohan/Flutter/projects/omit/lib/notifiers/feed_notifier.dart)
+#### [FeedNotifier](../lib/notifiers/feed_notifier.dart)
 
 | Property | Type | Description |
-|----------|------|-------------|
+|--------|------|-------------|
 | `feeds` | `List<Feed>` | Current feed list |
 | `isLoading` | `bool` | Loading indicator |
 | `error` | `String?` | Error message |
@@ -193,10 +210,10 @@ UI state management using `ChangeNotifier` pattern.
 | `deleteFeed(feedId)` | Delete a feed |
 | `updateUnreadCount(feedId, count)` | Update unread badge |
 
-#### [ArticleNotifier](lib/notifiers/article_notifier.dart)
+#### [ArticleNotifier](../lib/notifiers/article_notifier.dart)
 
 | Property | Type | Description |
-|----------|------|-------------|
+|--------|------|-------------|
 | `articles` | `List<Article>` | Current article list |
 | `currentFeedId` | `String?` | Active feed ID |
 | `isLoading` | `bool` | Loading indicator |
@@ -215,17 +232,17 @@ UI state management using `ChangeNotifier` pattern.
 
 | Screen | Description |
 |--------|-------------|
-| [FeedsScreen](lib/screens/feeds_screen.dart) | Main screen - list of subscribed feeds |
-| [ArticleListScreen](lib/screens/article_list_screen.dart) | Articles from a selected feed |
-| [ArticleDetailScreen](lib/screens/article_detail_screen.dart) | Container for article viewing (toggles WebView/Reader) |
-| [ReaderModeView](lib/screens/reader_mode_view.dart) | Clean, text-focused article reader |
-| [BookmarksScreen](lib/screens/bookmarks_screen.dart) | Saved bookmarks |
+| [FeedsScreen](../lib/screens/feeds_screen.dart) | Main screen - list of subscribed feeds |
+| [ArticleListScreen](../lib/screens/article_list_screen.dart) | Articles from a selected feed |
+| [ArticleDetailScreen](../lib/screens/article_detail_screen.dart) | Container for article viewing (toggles WebView/Reader) |
+| [ReaderModeView](../lib/screens/reader_mode_view.dart) | Clean, text-focused article reader |
+| [BookmarksScreen](../lib/screens/bookmarks_screen.dart) | Saved bookmarks |
 
 ---
 
 ## Dependency Injection
 
-Dependencies are wired up in [main.dart](lib/main.dart):
+Dependencies are wired up in [main.dart](../lib/main.dart):
 
 ```dart
 void main() async {
@@ -326,7 +343,7 @@ sequenceDiagram
 
 ## Theme
 
-The app uses a custom [AppTheme](file:///home/mohan/Flutter/projects/omit/lib/theme/app_theme.dart) with Material 3:
+The app uses a custom [AppTheme](../lib/theme/app_theme.dart) with Material 3:
 
 - **Primary Color:** Blue (#1565C0)
 - **Design:** Light theme with card-based layout

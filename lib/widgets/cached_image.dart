@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 class CachedImage extends StatelessWidget {
@@ -16,23 +17,19 @@ class CachedImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Image.network(
-      imageUrl,
+    return CachedNetworkImage(
+      imageUrl: imageUrl,
       width: width,
       height: height,
       fit: fit,
-      loadingBuilder: (context, child, loadingProgress) {
-        if (loadingProgress == null) return child;
+      progressIndicatorBuilder: (context, url, downloadProgress) {
         return Center(
           child: CircularProgressIndicator(
-            value: loadingProgress.expectedTotalBytes != null
-                ? loadingProgress.cumulativeBytesLoaded /
-                      loadingProgress.expectedTotalBytes!
-                : null,
+            value: downloadProgress.progress,
           ),
         );
       },
-      errorBuilder: (context, error, stackTrace) {
+      errorWidget: (context, url, error) {
         return Container(
           width: width,
           height: height,

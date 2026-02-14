@@ -23,13 +23,17 @@ void main() async {
   );
 
   final rssService = RssService(adBlockService: adBlockService);
+  final readerService = ReaderService();
 
   // Create repositories
   final feedRepository = FeedRepository(
     rssService: rssService,
     storageService: storageService,
   );
-  final articleRepository = ArticleRepository(storageService: storageService);
+  final articleRepository = ArticleRepository(
+    storageService: storageService,
+    readerService: readerService,
+  );
 
   // Create notifiers
   final feedNotifier = FeedNotifier(repository: feedRepository);

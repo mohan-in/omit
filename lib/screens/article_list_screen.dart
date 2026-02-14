@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:omit/models/models.dart';
 import 'package:omit/notifiers/notifiers.dart';
 import 'package:omit/screens/article_detail_screen.dart';
+import 'package:omit/widgets/cached_image.dart';
 import 'package:provider/provider.dart';
 
 /// Screen displaying articles from a specific feed.
@@ -146,13 +147,11 @@ class _ArticleTile extends StatelessWidget {
               if (article.imageUrl != null) ...[
                 ClipRRect(
                   borderRadius: BorderRadius.circular(8),
-                  child: Image.network(
-                    article.imageUrl!,
+                  child: CachedImage(
+                    imageUrl: article.imageUrl!,
                     width: 80,
                     height: 80,
                     fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) =>
-                        const SizedBox.shrink(),
                   ),
                 ),
                 const SizedBox(width: 12),

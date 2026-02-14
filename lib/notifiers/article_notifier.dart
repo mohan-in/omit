@@ -37,6 +37,34 @@ class ArticleNotifier extends ChangeNotifier {
     return _repository.getArticle(articleId);
   }
 
+  /// Load article content (for Reader Mode).
+  Future<void> loadArticleContent(String articleId) async {
+    final article = getArticle(articleId);
+    if (article == null || article.content != null) return;
+
+    // Use repository to fetch content
+    try {
+      final (title, content, author) = await _repository.fetchArticleContent(
+        article.link,
+      );
+
+      // Update the article in the list with new content
+      final index = _articles.indexWhere((a) => a.id == articleId);
+      if (index != -1) {
+        _articles[index] = _articles[index].copyWith(
+          title: title ?? _articles[index].title,
+          content: content,
+          author: author ?? _articles[index].author,
+        );
+        notifyListeners();
+      }
+    } on Exception catch (e) {
+      // Handle error (could expose an error state if needed)
+      debugPrint('Failed to load article content: $e');
+      rethrow;
+    }
+  }
+
   /// Mark an article as read.
   Future<void> markAsRead(String articleId) async {
     await _repository.markAsRead(articleId);
@@ -75,6 +103,20 @@ class ArticleNotifier extends ChangeNotifier {
   void clear() {
     _articles = [];
     _currentFeedId = null;
+    notifyListeners();
+  }
+
+  /// Get reader mode preference for a feed.
+  bool getFeedReaderMode(String feedId) {
+    return _repository.getFeedReaderMode(feedId);
+  }
+
+  /// Set reader mode preference for a feed.
+  Future<void> setFeedReaderMode(
+    String feedId, {
+    required bool isEnabled,
+  }) async {
+    await _repository.setFeedReaderMode(feedId, isEnabled: isEnabled);
     notifyListeners();
   }
 }

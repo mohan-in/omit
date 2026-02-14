@@ -17,7 +17,10 @@ void main() {
       rssService: rssService,
       storageService: storageService,
     );
-    final articleRepository = ArticleRepository(storageService: storageService);
+    final articleRepository = ArticleRepository(
+      storageService: storageService,
+      readerService: ReaderService(),
+    );
 
     // Create notifiers
     final feedNotifier = FeedNotifier(repository: feedRepository);

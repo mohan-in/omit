@@ -5,7 +5,6 @@ import 'package:omit/models/models.dart';
 import 'package:omit/notifiers/notifiers.dart';
 import 'package:omit/screens/article_webview.dart';
 import 'package:omit/screens/reader_mode_view.dart';
-import 'package:omit/services/services.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -30,8 +29,8 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
   void initState() {
     super.initState();
     // Initialize with persisted preference for this feed
-    final storageService = context.read<StorageService>();
-    _useReaderMode = storageService.getFeedReaderMode(widget.article.feedId);
+    final notifier = context.read<ArticleNotifier>();
+    _useReaderMode = notifier.getFeedReaderMode(widget.article.feedId);
   }
 
   @override
@@ -68,7 +67,7 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
           });
           // Persist preference for this feed
           unawaited(
-            context.read<StorageService>().setFeedReaderMode(
+            context.read<ArticleNotifier>().setFeedReaderMode(
               widget.article.feedId,
               isEnabled: _useReaderMode,
             ),

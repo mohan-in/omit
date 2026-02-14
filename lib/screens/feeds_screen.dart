@@ -10,6 +10,7 @@ import 'package:omit/notifiers/notifiers.dart';
 import 'package:omit/screens/article_list_screen.dart';
 import 'package:omit/screens/bookmarks_screen.dart';
 import 'package:omit/widgets/add_feed_dialog.dart';
+import 'package:omit/widgets/cached_image.dart';
 import 'package:provider/provider.dart';
 
 /// Main screen displaying all subscribed RSS feeds.
@@ -386,10 +387,9 @@ class _FeedTile extends StatelessWidget {
           color: Colors.grey.shade200,
         ),
         clipBehavior: Clip.antiAlias,
-        child: Image.network(
-          feed.iconUrl!,
+        child: CachedImage(
+          imageUrl: feed.iconUrl!,
           fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) => _buildDefaultIcon(),
         ),
       );
     }
