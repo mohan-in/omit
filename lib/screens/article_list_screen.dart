@@ -1,16 +1,17 @@
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:intl/intl.dart';
+import 'dart:async';
 
-import '../models/models.dart';
-import '../notifiers/notifiers.dart';
-import 'article_detail_screen.dart';
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:omit/models/models.dart';
+import 'package:omit/notifiers/notifiers.dart';
+import 'package:omit/screens/article_detail_screen.dart';
+import 'package:provider/provider.dart';
 
 /// Screen displaying articles from a specific feed.
 class ArticleListScreen extends StatefulWidget {
-  final Feed feed;
+  const ArticleListScreen({required this.feed, super.key});
 
-  const ArticleListScreen({super.key, required this.feed});
+  final Feed feed;
 
   @override
   State<ArticleListScreen> createState() => _ArticleListScreenState();
@@ -106,22 +107,26 @@ class _ArticleListScreenState extends State<ArticleListScreen> {
     final articleNotifier = context.read<ArticleNotifier>();
     final feedNotifier = context.read<FeedNotifier>();
 
-    articleNotifier.markAsRead(article.id);
+    unawaited(articleNotifier.markAsRead(article.id));
     final unreadCount = articleNotifier.getUnreadCount(widget.feed.id);
     feedNotifier.updateUnreadCount(widget.feed.id, unreadCount);
 
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => ArticleDetailScreen(article: article)),
+    unawaited(
+      Navigator.push(
+        context,
+        MaterialPageRoute<void>(
+          builder: (_) => ArticleDetailScreen(article: article),
+        ),
+      ),
     );
   }
 }
 
 class _ArticleTile extends StatelessWidget {
+  const _ArticleTile({required this.article, required this.onTap});
+
   final Article article;
   final VoidCallback onTap;
-
-  const _ArticleTile({required this.article, required this.onTap});
 
   @override
   Widget build(BuildContext context) {

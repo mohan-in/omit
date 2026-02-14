@@ -1,11 +1,16 @@
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
+import 'dart:typed_data';
 
-import '../models/models.dart';
-import '../notifiers/notifiers.dart';
-import '../widgets/add_feed_dialog.dart';
-import 'article_list_screen.dart';
-import 'bookmarks_screen.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:flutter/material.dart';
+import 'package:omit/models/models.dart';
+import 'package:omit/notifiers/notifiers.dart';
+import 'package:omit/screens/article_list_screen.dart';
+import 'package:omit/screens/bookmarks_screen.dart';
+import 'package:omit/widgets/add_feed_dialog.dart';
+import 'package:provider/provider.dart';
 
 /// Main screen displaying all subscribed RSS feeds.
 class FeedsScreen extends StatefulWidget {
@@ -26,14 +31,19 @@ class _FeedsScreenState extends State<FeedsScreen> {
             icon: const Icon(Icons.bookmark_outline),
             tooltip: 'Bookmarks',
             onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const BookmarksScreen()),
+              unawaited(
+                Navigator.push(
+                  context,
+                  MaterialPageRoute<void>(
+                    builder: (_) => const BookmarksScreen(),
+                  ),
+                ),
               );
             },
           ),
         ],
       ),
+      drawer: _buildDrawer(context),
       body: Consumer<FeedNotifier>(
         builder: (context, feedNotifier, child) {
           if (feedNotifier.isLoading && feedNotifier.feeds.isEmpty) {
@@ -50,7 +60,7 @@ class _FeedsScreenState extends State<FeedsScreen> {
               padding: const EdgeInsets.symmetric(vertical: 8),
               itemCount: feedNotifier.feeds.length,
               onReorder: (oldIndex, newIndex) {
-                feedNotifier.reorderFeeds(oldIndex, newIndex);
+                unawaited(feedNotifier.reorderFeeds(oldIndex, newIndex));
               },
               itemBuilder: (context, index) {
                 final feed = feedNotifier.feeds[index];
@@ -66,6 +76,181 @@ class _FeedsScreenState extends State<FeedsScreen> {
         child: const Icon(Icons.add),
       ),
     );
+  }
+
+  Widget _buildDrawer(BuildContext context) {
+    return Drawer(
+      child: ListView(
+        padding: EdgeInsets.zero,
+        children: [
+          DrawerHeader(
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'OMIT',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'RSS Reader',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.8),
+                    fontSize: 16,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.file_download_outlined),
+            title: const Text('Import Feeds'),
+            onTap: () {
+              Navigator.pop(context);
+              unawaited(_importFeeds(context));
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.file_upload_outlined),
+            title: const Text('Export Feeds'),
+            onTap: () {
+              Navigator.pop(context);
+              unawaited(_exportFeeds(context));
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _exportFeeds(BuildContext context) async {
+    final feeds = context.read<FeedNotifier>().feeds;
+    if (feeds.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('No feeds to export')));
+      return;
+    }
+
+    try {
+      final content = feeds.map((e) => e.url).join('\n');
+
+      final bytes = utf8.encode(content);
+
+      final path = await FilePicker.platform.saveFile(
+        dialogTitle: 'Export Feeds',
+        fileName: 'feeds_export.txt',
+        type: FileType.custom,
+        allowedExtensions: ['txt'],
+        bytes: Uint8List.fromList(bytes),
+      );
+
+      // On desktop, saveFile returns a path but doesn't write the file.
+      // On mobile, saveFile writes the file using the bytes parameter.
+      if (path != null) {
+        if (!Platform.isAndroid && !Platform.isIOS) {
+          await File(path).writeAsString(content);
+        }
+
+        if (context.mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(
+            const SnackBar(content: Text('Feeds exported successfully')),
+          );
+        }
+      }
+    } on Object catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to export feeds: $e')));
+      }
+    }
+  }
+
+  Future<void> _importFeeds(BuildContext context) async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['txt', 'opml', 'xml'],
+      );
+
+      if (result != null && result.files.single.path != null) {
+        final file = File(result.files.single.path!);
+        final content = await file.readAsString();
+        final urls = content
+            .split('\n')
+            .map((e) => e.trim())
+            .where((e) => e.isNotEmpty)
+            .toList();
+
+        if (context.mounted) {
+          await _processImportedUrls(context, urls);
+        }
+      }
+    } on Object catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to import feeds: $e')));
+      }
+    }
+  }
+
+  Future<void> _processImportedUrls(
+    BuildContext context,
+    List<String> urls,
+  ) async {
+    var successCount = 0;
+    var failCount = 0;
+    final notifier = context.read<FeedNotifier>();
+
+    // Show loading indicator
+    unawaited(
+      showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(child: CircularProgressIndicator()),
+      ),
+    );
+
+    for (final url in urls) {
+      try {
+        await notifier.addFeed(url);
+        successCount++;
+      } on Object catch (_) {
+        failCount++;
+      }
+    }
+
+    if (context.mounted) {
+      Navigator.pop(context); // Dismiss loading
+      unawaited(
+        showDialog<void>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Import Result'),
+            content: Text(
+              'Imported: $successCount\nFailed/Skipped: $failCount',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
   }
 
   Widget _buildEmptyState(BuildContext context) {
@@ -96,14 +281,16 @@ class _FeedsScreenState extends State<FeedsScreen> {
   }
 
   void _showAddFeedDialog(BuildContext context) {
-    showDialog(context: context, builder: (_) => const AddFeedDialog());
+    unawaited(
+      showDialog<void>(context: context, builder: (_) => const AddFeedDialog()),
+    );
   }
 }
 
 class _FeedTile extends StatelessWidget {
-  final Feed feed;
+  const _FeedTile({required this.feed, super.key});
 
-  const _FeedTile({super.key, required this.feed});
+  final Feed feed;
 
   @override
   Widget build(BuildContext context) {
@@ -117,7 +304,7 @@ class _FeedTile extends StatelessWidget {
         child: const Icon(Icons.delete, color: Colors.white),
       ),
       confirmDismiss: (_) async {
-        return await showDialog<bool>(
+        return showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
             title: const Text('Delete Feed'),
@@ -137,7 +324,7 @@ class _FeedTile extends StatelessWidget {
         );
       },
       onDismissed: (_) {
-        context.read<FeedNotifier>().deleteFeed(feed.id);
+        unawaited(context.read<FeedNotifier>().deleteFeed(feed.id));
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('${feed.title} deleted')));
@@ -175,9 +362,13 @@ class _FeedTile extends StatelessWidget {
                 )
               : null,
           onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => ArticleListScreen(feed: feed)),
+            unawaited(
+              Navigator.push(
+                context,
+                MaterialPageRoute<void>(
+                  builder: (_) => ArticleListScreen(feed: feed),
+                ),
+              ),
             );
           },
         ),

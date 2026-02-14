@@ -1,21 +1,20 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_html/flutter_html.dart';
-
 import 'package:intl/intl.dart';
+import 'package:omit/models/models.dart';
+import 'package:omit/widgets/cached_image.dart';
 import 'package:readability/readability.dart' as readability;
-
-import '../models/models.dart';
-import '../widgets/cached_image.dart';
 
 /// Widget that displays article content in reader mode.
 ///
 /// Extracts the main content from the article URL and renders it
 /// in a clean, native Flutter view without ads or paywall overlays.
 class ReaderModeView extends StatefulWidget {
+  const ReaderModeView({required this.article, super.key, this.actions});
+
   final Article article;
   final List<Widget>? actions;
-
-  const ReaderModeView({super.key, required this.article, this.actions});
 
   @override
   State<ReaderModeView> createState() => _ReaderModeViewState();
@@ -30,7 +29,7 @@ class _ReaderModeViewState extends State<ReaderModeView> {
   @override
   void initState() {
     super.initState();
-    _loadArticle();
+    unawaited(_loadArticle());
   }
 
   Future<void> _loadArticle() async {
@@ -44,7 +43,7 @@ class _ReaderModeViewState extends State<ReaderModeView> {
           _isLoading = false;
         });
       }
-    } catch (e) {
+    } on Exception catch (e) {
       if (mounted) {
         setState(() {
           _error = 'Failed to load article: $e';
@@ -92,7 +91,6 @@ class _ReaderModeViewState extends State<ReaderModeView> {
   Widget _buildAppBar() {
     return SliverAppBar(
       expandedHeight: widget.article.imageUrl != null ? 300 : kToolbarHeight,
-      floating: false,
       pinned: true,
       actions: widget.actions,
       title: widget.article.imageUrl == null
@@ -108,7 +106,7 @@ class _ReaderModeViewState extends State<ReaderModeView> {
                 imageUrl: widget.article.imageUrl!,
                 width: double.infinity,
                 height: 300,
-                fit: BoxFit.cover,
+                // fit: BoxFit.cover, // default is cover
               ),
             )
           : null,
@@ -177,7 +175,7 @@ class _ReaderModeViewState extends State<ReaderModeView> {
   Widget _buildContent() {
     return Html(
       data: _content,
-      style: {
+      style: <String, Style>{
         'body': Style(
           fontSize: FontSize(18),
           lineHeight: const LineHeight(1.8),
@@ -249,7 +247,7 @@ class _ReaderModeViewState extends State<ReaderModeView> {
                   _isLoading = true;
                   _error = null;
                 });
-                _loadArticle();
+                unawaited(_loadArticle());
               },
               icon: const Icon(Icons.refresh),
               label: const Text('Retry'),

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:omit/notifiers/notifiers.dart';
 import 'package:provider/provider.dart';
-
-import '../notifiers/notifiers.dart';
 
 /// Dialog for adding a new RSS feed.
 class AddFeedDialog extends StatefulWidget {
@@ -100,13 +99,10 @@ class _AddFeedDialogState extends State<AddFeedDialog> {
           const SnackBar(content: Text('Feed added successfully!')),
         );
       }
-    } catch (e) {
-      setState(() {
-        _error = e.toString().replaceFirst('Exception: ', '');
-      });
-    } finally {
+    } on Exception catch (e) {
       if (mounted) {
         setState(() {
+          _error = e.toString().replaceFirst('Exception: ', '');
           _isLoading = false;
         });
       }

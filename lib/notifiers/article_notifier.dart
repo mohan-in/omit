@@ -1,19 +1,19 @@
 import 'package:flutter/foundation.dart';
 
-import '../models/models.dart';
-import '../repositories/repositories.dart';
+import 'package:omit/models/models.dart';
+import 'package:omit/repositories/repositories.dart';
 
 /// Notifier for managing article UI state.
 /// Uses ArticleRepository for data operations.
 class ArticleNotifier extends ChangeNotifier {
+  ArticleNotifier({required ArticleRepository repository})
+    : _repository = repository;
+
   final ArticleRepository _repository;
 
   List<Article> _articles = [];
   String? _currentFeedId;
   bool _isLoading = false;
-
-  ArticleNotifier({required ArticleRepository repository})
-    : _repository = repository;
 
   // Getters
   List<Article> get articles => List.unmodifiable(_articles);

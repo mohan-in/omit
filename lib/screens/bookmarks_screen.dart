@@ -1,10 +1,11 @@
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:intl/intl.dart';
+import 'dart:async';
 
-import '../models/models.dart';
-import '../notifiers/notifiers.dart';
-import 'article_detail_screen.dart';
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:omit/models/models.dart';
+import 'package:omit/notifiers/notifiers.dart';
+import 'package:omit/screens/article_detail_screen.dart';
+import 'package:provider/provider.dart';
 
 /// Screen displaying bookmarked articles.
 class BookmarksScreen extends StatelessWidget {
@@ -67,14 +68,18 @@ class BookmarksScreen extends StatelessWidget {
   }
 
   void _openArticle(BuildContext context, Article article) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => ArticleDetailScreen(article: article)),
+    unawaited(
+      Navigator.push(
+        context,
+        MaterialPageRoute<void>(
+          builder: (_) => ArticleDetailScreen(article: article),
+        ),
+      ),
     );
   }
 
   void _removeBookmark(BuildContext context, Article article) {
-    context.read<ArticleNotifier>().toggleBookmark(article.id);
+    unawaited(context.read<ArticleNotifier>().toggleBookmark(article.id));
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Removed "${article.title}" from bookmarks')),
     );
@@ -82,15 +87,15 @@ class BookmarksScreen extends StatelessWidget {
 }
 
 class _BookmarkTile extends StatelessWidget {
-  final Article article;
-  final VoidCallback onTap;
-  final VoidCallback onRemove;
-
   const _BookmarkTile({
     required this.article,
     required this.onTap,
     required this.onRemove,
   });
+
+  final Article article;
+  final VoidCallback onTap;
+  final VoidCallback onRemove;
 
   @override
   Widget build(BuildContext context) {

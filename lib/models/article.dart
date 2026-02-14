@@ -5,6 +5,20 @@ part 'article.g.dart';
 /// Represents an article/item from an RSS feed.
 @HiveType(typeId: 1)
 class Article extends HiveObject {
+  Article({
+    required this.id,
+    required this.feedId,
+    required this.title,
+    required this.link,
+    this.description,
+    this.content,
+    this.author,
+    this.pubDate,
+    this.imageUrl,
+    this.isRead = false,
+    this.isBookmarked = false,
+  });
+
   @HiveField(0)
   final String id;
 
@@ -37,20 +51,6 @@ class Article extends HiveObject {
 
   @HiveField(10)
   bool isBookmarked;
-
-  Article({
-    required this.id,
-    required this.feedId,
-    required this.title,
-    required this.link,
-    this.description,
-    this.content,
-    this.author,
-    this.pubDate,
-    this.imageUrl,
-    this.isRead = false,
-    this.isBookmarked = false,
-  });
 
   /// Creates a unique ID for an article based on feed and link.
   static String generateId(String feedId, String link) {

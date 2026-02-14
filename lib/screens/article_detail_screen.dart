@@ -1,12 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:omit/models/models.dart';
+import 'package:omit/notifiers/notifiers.dart';
+import 'package:omit/screens/article_webview.dart';
+import 'package:omit/screens/reader_mode_view.dart';
+import 'package:omit/services/services.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
-
-import '../models/models.dart';
-import '../notifiers/notifiers.dart';
-import '../services/services.dart';
-import 'article_webview.dart';
-import 'reader_mode_view.dart';
 
 /// Screen for viewing article content.
 ///
@@ -14,9 +15,9 @@ import 'reader_mode_view.dart';
 /// - WebView mode: Loads the full webpage with ad blocking
 /// - Reader mode: Extracts and displays just the article content
 class ArticleDetailScreen extends StatefulWidget {
-  final Article article;
+  const ArticleDetailScreen({required this.article, super.key});
 
-  const ArticleDetailScreen({super.key, required this.article});
+  final Article article;
 
   @override
   State<ArticleDetailScreen> createState() => _ArticleDetailScreenState();
@@ -66,9 +67,11 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
             _useReaderMode = !_useReaderMode;
           });
           // Persist preference for this feed
-          context.read<StorageService>().setFeedReaderMode(
-            widget.article.feedId,
-            _useReaderMode,
+          unawaited(
+            context.read<StorageService>().setFeedReaderMode(
+              widget.article.feedId,
+              isEnabled: _useReaderMode,
+            ),
           );
         },
       ),
@@ -87,7 +90,7 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                 ? 'Remove bookmark'
                 : 'Add bookmark',
             onPressed: () {
-              notifier.toggleBookmark(widget.article.id);
+              unawaited(notifier.toggleBookmark(widget.article.id));
             },
           );
         },

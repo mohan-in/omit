@@ -1,5 +1,7 @@
-import 'package:flutter/material.dart';
+import 'dart:async';
+
 import 'package:adblocker_webview/adblocker_webview.dart';
+import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 /// WebView widget for displaying article content with privacy protection.
@@ -9,9 +11,9 @@ import 'package:webview_flutter/webview_flutter.dart';
 /// - Privacy protection: clears cookies, cache, localStorage on each load
 /// - Loading overlay to hide cosmetic filtering flash
 class ArticleWebView extends StatefulWidget {
-  final String url;
+  const ArticleWebView({required this.url, super.key});
 
-  const ArticleWebView({super.key, required this.url});
+  final String url;
 
   @override
   State<ArticleWebView> createState() => _ArticleWebViewState();
@@ -27,7 +29,7 @@ class _ArticleWebViewState extends State<ArticleWebView> {
   @override
   void initState() {
     super.initState();
-    _clearBrowsingData();
+    unawaited(_clearBrowsingData());
   }
 
   /// Clear all browsing data to prevent tracking.
@@ -38,7 +40,7 @@ class _ArticleWebViewState extends State<ArticleWebView> {
     // Clear cache via controller
     try {
       await AdBlockerWebviewController.instance.clearCache();
-    } catch (_) {
+    } on Object catch (_) {
       // Ignore if not available
     }
   }
@@ -52,7 +54,9 @@ class _ArticleWebViewState extends State<ArticleWebView> {
   ''';
 
   void _runStorageClearScript() {
-    AdBlockerWebviewController.instance.runScript(_clearStorageScript);
+    unawaited(
+      AdBlockerWebviewController.instance.runScript(_clearStorageScript),
+    );
   }
 
   @override
@@ -101,7 +105,7 @@ class _ArticleWebViewState extends State<ArticleWebView> {
 
         // Loading overlay
         if (_isLoading)
-          Container(
+          ColoredBox(
             color: Theme.of(context).scaffoldBackgroundColor,
             child: Center(
               child: Column(

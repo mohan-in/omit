@@ -1,18 +1,18 @@
 import 'package:flutter/foundation.dart';
 
-import '../models/models.dart';
-import '../repositories/repositories.dart';
+import 'package:omit/models/models.dart';
+import 'package:omit/repositories/repositories.dart';
 
 /// Notifier for managing feed UI state.
 /// Uses FeedRepository for data operations.
 class FeedNotifier extends ChangeNotifier {
+  FeedNotifier({required FeedRepository repository}) : _repository = repository;
+
   final FeedRepository _repository;
 
   List<Feed> _feeds = [];
   bool _isLoading = false;
   String? _error;
-
-  FeedNotifier({required FeedRepository repository}) : _repository = repository;
 
   // Getters
   List<Feed> get feeds => List.unmodifiable(_feeds);
@@ -29,7 +29,7 @@ class FeedNotifier extends ChangeNotifier {
       _feeds = await _repository.loadFeeds();
       // Sort feeds by order
       _feeds.sort((a, b) => a.order.compareTo(b.order));
-    } catch (e) {
+    } on Object catch (e) {
       _error = 'Failed to load feeds: $e';
     } finally {
       _isLoading = false;
@@ -53,7 +53,7 @@ class FeedNotifier extends ChangeNotifier {
       _feeds.add(feed);
       notifyListeners();
       return feed;
-    } catch (e) {
+    } on Object catch (e) {
       _error = 'Failed to add feed: $e';
       notifyListeners();
       rethrow;
@@ -74,7 +74,7 @@ class FeedNotifier extends ChangeNotifier {
           notifyListeners();
         }
       }
-    } catch (e) {
+    } on Object catch (e) {
       _error = 'Failed to refresh feed: $e';
       notifyListeners();
     }
@@ -90,7 +90,7 @@ class FeedNotifier extends ChangeNotifier {
       for (final feed in _feeds) {
         await refreshFeed(feed.id);
       }
-    } catch (e) {
+    } on Object catch (e) {
       _error = 'Failed to refresh feeds: $e';
     } finally {
       _isLoading = false;
@@ -104,7 +104,7 @@ class FeedNotifier extends ChangeNotifier {
       await _repository.deleteFeed(feedId);
       _feeds.removeWhere((f) => f.id == feedId);
       notifyListeners();
-    } catch (e) {
+    } on Object catch (e) {
       _error = 'Failed to delete feed: $e';
       notifyListeners();
     }
@@ -114,7 +114,7 @@ class FeedNotifier extends ChangeNotifier {
   Feed? getFeed(String feedId) {
     try {
       return _feeds.firstWhere((f) => f.id == feedId);
-    } catch (_) {
+    } on Object catch (_) {
       return null;
     }
   }
@@ -130,11 +130,12 @@ class FeedNotifier extends ChangeNotifier {
 
   /// Reorder feeds by moving item from oldIndex to newIndex.
   Future<void> reorderFeeds(int oldIndex, int newIndex) async {
+    var newIdx = newIndex;
     // Adjust newIndex for removal
-    if (newIndex > oldIndex) newIndex--;
+    if (newIdx > oldIndex) newIdx--;
 
     final feed = _feeds.removeAt(oldIndex);
-    _feeds.insert(newIndex, feed);
+    _feeds.insert(newIdx, feed);
 
     // Update order field for all feeds
     for (var i = 0; i < _feeds.length; i++) {

@@ -1,16 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
-import 'package:omit/screens/feeds_screen.dart';
-import 'package:omit/repositories/repositories.dart';
 import 'package:omit/notifiers/notifiers.dart';
+import 'package:omit/repositories/repositories.dart';
+import 'package:omit/screens/feeds_screen.dart';
 import 'package:omit/services/services.dart';
 import 'package:provider/provider.dart';
 
 void main() {
-  testWidgets('FeedsScreen shows empty state initially', (
-    WidgetTester tester,
-  ) async {
+  testWidgets('FeedsScreen shows empty state initially', (tester) async {
     // Create mock services
     final storageService = StorageService();
     final rssService = RssService();

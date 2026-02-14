@@ -1,13 +1,13 @@
-import '../models/models.dart';
-import '../services/services.dart';
+import 'package:omit/models/models.dart';
+import 'package:omit/services/services.dart';
 
 /// Repository for managing articles data.
 /// Pure data layer - no UI state management.
 class ArticleRepository {
-  final StorageService _storageService;
-
   ArticleRepository({required StorageService storageService})
     : _storageService = storageService;
+
+  final StorageService _storageService;
 
   /// Get articles for a specific feed.
   List<Article> getArticlesForFeed(String feedId) {

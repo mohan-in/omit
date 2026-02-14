@@ -1,17 +1,17 @@
-import '../models/models.dart';
-import '../services/services.dart';
+import 'package:omit/models/models.dart';
+import 'package:omit/services/services.dart';
 
 /// Repository for managing RSS feeds data.
 /// Pure data layer - no UI state management.
 class FeedRepository {
-  final RssService _rssService;
-  final StorageService _storageService;
-
   FeedRepository({
     required RssService rssService,
     required StorageService storageService,
   }) : _rssService = rssService,
        _storageService = storageService;
+
+  final RssService _rssService;
+  final StorageService _storageService;
 
   /// Load all feeds from local storage.
   Future<List<Feed>> loadFeeds() async {
@@ -60,7 +60,7 @@ class FeedRepository {
 
     // Save updated articles, merging with existing state (isRead, isBookmarked)
     final existingArticles = _storageService.getArticlesForFeed(feedId);
-    final existingArticlesMap = {for (var a in existingArticles) a.id: a};
+    final existingArticlesMap = {for (final a in existingArticles) a.id: a};
 
     final articlesToSave = <Article>[];
 

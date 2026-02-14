@@ -1,6 +1,5 @@
 import 'package:hive_flutter/hive_flutter.dart';
-
-import '../models/models.dart';
+import 'package:omit/models/models.dart';
 
 /// Service for managing local storage using Hive.
 class StorageService {
@@ -10,7 +9,7 @@ class StorageService {
 
   Box<Feed>? _feedsBox;
   Box<Article>? _articlesBox;
-  Box? _settingsBox;
+  Box<dynamic>? _settingsBox;
 
   bool _isInitialized = false;
 
@@ -31,7 +30,7 @@ class StorageService {
     // Open boxes
     _feedsBox = await Hive.openBox<Feed>(_feedsBoxName);
     _articlesBox = await Hive.openBox<Article>(_articlesBoxName);
-    _settingsBox = await Hive.openBox(_settingsBoxName);
+    _settingsBox = await Hive.openBox<dynamic>(_settingsBoxName);
 
     _isInitialized = true;
   }
@@ -102,7 +101,7 @@ class StorageService {
   /// Save multiple articles at once.
   Future<void> saveArticles(List<Article> articles) async {
     _ensureInitialized();
-    final map = {for (var article in articles) article.id: article};
+    final map = {for (final article in articles) article.id: article};
     await _articlesBox!.putAll(map);
   }
 
@@ -152,11 +151,19 @@ class StorageService {
   /// Get reader mode preference for a feed.
   bool getFeedReaderMode(String feedId) {
     _ensureInitialized();
-    return _settingsBox!.get('reader_mode_$feedId', defaultValue: false);
+    return _settingsBox!.get(
+              'reader_mode_$feedId',
+              defaultValue: false,
+            )
+            as bool? ??
+        false;
   }
 
   /// Set reader mode preference for a feed.
-  Future<void> setFeedReaderMode(String feedId, bool isEnabled) async {
+  Future<void> setFeedReaderMode(
+    String feedId, {
+    required bool isEnabled,
+  }) async {
     _ensureInitialized();
     await _settingsBox!.put('reader_mode_$feedId', isEnabled);
   }

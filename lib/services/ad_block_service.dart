@@ -1,11 +1,13 @@
-import 'package:html/parser.dart' as html_parser;
 import 'package:html/dom.dart';
+import 'package:html/parser.dart' as html_parser;
 
 /// Service for filtering ad content from RSS feed HTML.
 ///
 /// Uses a curated list of common ad domains to remove ad-related
 /// elements from feed descriptions and content.
 class AdBlockService {
+  AdBlockService();
+
   /// Common ad/tracking domains to filter from RSS content
   static const _blockedDomains = <String>{
     // Google Ads
@@ -38,8 +40,6 @@ class AdBlockService {
 
   bool _isInitialized = false;
 
-  AdBlockService();
-
   /// Initialize the service.
   Future<void> initialize() async {
     _isInitialized = true;
@@ -54,14 +54,15 @@ class AdBlockService {
       return _blockedDomains.any(
         (domain) => host == domain || host.endsWith('.$domain'),
       );
-    } catch (_) {
+    } on FormatException catch (_) {
       return false;
     }
   }
 
   /// Filter HTML content to remove ad-related elements.
   ///
-  /// Removes <img>, <a>, <iframe>, and <script> tags linking to blocked domains.
+  /// Removes <img>, <a>, <iframe>, and <script> tags linking to blocked
+  /// domains.
   String filterContent(String html) {
     if (!_isInitialized) return html;
 
@@ -86,7 +87,7 @@ class AdBlockService {
       }
 
       return document.outerHtml;
-    } catch (_) {
+    } on Exception catch (_) {
       return html;
     }
   }

@@ -1,20 +1,20 @@
 import 'dart:convert';
+import 'dart:io';
 
-import 'package:http/http.dart' as http;
 import 'package:dart_rss/dart_rss.dart';
 import 'package:html/parser.dart' as html_parser;
-
-import 'ad_block_service.dart';
-import '../models/models.dart';
+import 'package:http/http.dart' as http;
+import 'package:omit/models/models.dart';
+import 'package:omit/services/ad_block_service.dart';
 
 /// Service for fetching and parsing RSS/Atom feeds.
 class RssService {
-  final http.Client _client;
-  final AdBlockService? _adBlockService;
-
   RssService({http.Client? client, AdBlockService? adBlockService})
     : _client = client ?? http.Client(),
       _adBlockService = adBlockService;
+
+  final http.Client _client;
+  final AdBlockService? _adBlockService;
 
   /// Fetches and parses an RSS or Atom feed from the given URL.
   /// Returns a tuple of (Feed metadata, List of Articles).
@@ -25,7 +25,7 @@ class RssService {
     final response = await _client.get(Uri.parse(url));
 
     if (response.statusCode != 200) {
-      throw Exception('Failed to fetch feed: HTTP ${response.statusCode}');
+      throw const HttpException('Failed to fetch feed');
     }
 
     // Decode response as UTF-8, with fallback for malformed sequences
@@ -34,11 +34,13 @@ class RssService {
     // Try parsing as RSS first, then Atom
     try {
       return _parseRssFeed(body, url, existingFeedId);
-    } catch (_) {
+    } on Object catch (_) {
       try {
         return _parseAtomFeed(body, url, existingFeedId);
-      } catch (e) {
-        throw Exception('Failed to parse feed: Not a valid RSS or Atom feed');
+      } on Exception catch (_) {
+        throw const FormatException(
+          'Failed to parse feed: Not a valid RSS or Atom feed',
+        );
       }
     }
   }
@@ -142,7 +144,7 @@ class RssService {
       final domain = uri.host;
       // Google's favicon service - reliable and handles most sites
       return 'https://www.google.com/s2/favicons?domain=$domain&sz=64';
-    } catch (_) {
+    } on FormatException catch (_) {
       return '';
     }
   }
@@ -158,7 +160,7 @@ class RssService {
         text = text.replaceAll('&nbsp;', ' ');
       }
       return text;
-    } catch (_) {
+    } on Exception catch (_) {
       return html;
     }
   }
@@ -181,12 +183,12 @@ class RssService {
     if (dateStr == null) return null;
     try {
       return DateTime.parse(dateStr);
-    } catch (_) {
+    } on Exception catch (_) {
       // Try alternative date formats
       try {
         // RFC 822 format used by RSS
         return _parseRfc822Date(dateStr);
-      } catch (_) {
+      } on Exception catch (_) {
         return null;
       }
     }
@@ -228,18 +230,18 @@ class RssService {
   String? _extractImageUrl(RssItem item) {
     // Try enclosure first (common for podcasts and image feeds)
     if (item.enclosure?.url != null &&
-        item.enclosure!.type?.startsWith('image/') == true) {
+        (item.enclosure!.type?.startsWith('image/') ?? false)) {
       return item.enclosure!.url;
     }
 
     // Try media:content
-    if (item.media?.contents.isNotEmpty == true) {
+    if (item.media?.contents.isNotEmpty ?? false) {
       final media = item.media!.contents.first;
       if (media.url != null) return media.url;
     }
 
     // Try media:thumbnail
-    if (item.media?.thumbnails.isNotEmpty == true) {
+    if (item.media?.thumbnails.isNotEmpty ?? false) {
       return item.media!.thumbnails.first.url;
     }
 
@@ -255,7 +257,7 @@ class RssService {
   String? _extractImageFromHtml(String? html) {
     if (html == null) return null;
 
-    final imgRegex = RegExp(r'<img[^>]+src="([^"]+)"');
+    final imgRegex = RegExp('<img[^>]+src="([^"]+)"');
     final match = imgRegex.firstMatch(html);
     return match?.group(1);
   }

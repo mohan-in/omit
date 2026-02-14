@@ -1,12 +1,11 @@
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:adblocker_webview/adblocker_webview.dart';
-
-import 'services/services.dart';
-import 'repositories/repositories.dart';
-import 'notifiers/notifiers.dart';
-import 'screens/feeds_screen.dart';
-import 'theme/app_theme.dart';
+import 'package:flutter/material.dart';
+import 'package:omit/notifiers/notifiers.dart';
+import 'package:omit/repositories/repositories.dart';
+import 'package:omit/screens/feeds_screen.dart';
+import 'package:omit/services/services.dart';
+import 'package:omit/theme/app_theme.dart';
+import 'package:provider/provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

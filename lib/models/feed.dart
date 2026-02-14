@@ -5,30 +5,6 @@ part 'feed.g.dart';
 /// Represents an RSS/Atom feed subscription.
 @HiveType(typeId: 0)
 class Feed extends HiveObject {
-  @HiveField(0)
-  final String id;
-
-  @HiveField(1)
-  String title;
-
-  @HiveField(2)
-  final String url;
-
-  @HiveField(3)
-  String? description;
-
-  @HiveField(4)
-  String? iconUrl;
-
-  @HiveField(5)
-  DateTime? lastUpdated;
-
-  @HiveField(6)
-  int unreadCount;
-
-  @HiveField(7)
-  int order;
-
   Feed({
     required this.id,
     required this.title,
@@ -56,6 +32,30 @@ class Feed extends HiveObject {
       lastUpdated: DateTime.now(),
     );
   }
+
+  @HiveField(0)
+  final String id;
+
+  @HiveField(1)
+  String title;
+
+  @HiveField(2)
+  final String url;
+
+  @HiveField(3)
+  String? description;
+
+  @HiveField(4)
+  String? iconUrl;
+
+  @HiveField(5)
+  DateTime? lastUpdated;
+
+  @HiveField(6)
+  int unreadCount;
+
+  @HiveField(7)
+  int order;
 
   Feed copyWith({
     String? id,

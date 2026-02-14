@@ -6,10 +6,8 @@ class AppTheme {
 
   // Color palette
   static const Color _primaryColor = Color(0xFF1565C0);
-  static const Color _secondaryColor = Color(0xFF42A5F5);
   static const Color _backgroundColor = Color(0xFFFAFAFA);
   static const Color _surfaceColor = Colors.white;
-  static const Color _errorColor = Color(0xFFD32F2F);
 
   // Text colors
   static const Color _textPrimary = Color(0xFF212121);
@@ -19,11 +17,8 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
-      colorScheme: ColorScheme.light(
-        primary: _primaryColor,
-        secondary: _secondaryColor,
-        surface: _surfaceColor,
-        error: _errorColor,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: _primaryColor,
       ),
       scaffoldBackgroundColor: _backgroundColor,
 
