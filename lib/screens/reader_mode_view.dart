@@ -265,12 +265,6 @@ class _ReaderModeViewState extends State<ReaderModeView> {
           color: Theme.of(context).colorScheme.primary,
           textDecoration: TextDecoration.underline,
         ),
-        // Hide elements that might duplicate the header or be distracting
-        'img': Style(display: Display.none),
-        'figure': Style(display: Display.none),
-        'figcaption': Style(display: Display.none),
-        'video': Style(display: Display.none),
-        'audio': Style(display: Display.none),
       },
     );
   }
