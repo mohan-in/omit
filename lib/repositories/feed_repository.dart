@@ -82,8 +82,10 @@ class FeedRepository {
 
     await _storageService.saveArticles(articlesToSave);
 
-    // Update feed metadata
-    updatedFeed.unreadCount = _storageService.getUnreadCount(feedId);
+    // Update feed metadata (preserving local title)
+    updatedFeed
+      ..title = feed.title
+      ..unreadCount = _storageService.getUnreadCount(feedId);
     await _storageService.saveFeed(updatedFeed);
 
     return updatedFeed;
@@ -110,5 +112,10 @@ class FeedRepository {
     for (final feed in feeds) {
       await _storageService.saveFeed(feed);
     }
+  }
+
+  /// Update a single feed (e.g. rename).
+  Future<void> updateFeed(Feed feed) async {
+    await _storageService.saveFeed(feed);
   }
 }

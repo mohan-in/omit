@@ -9,8 +9,7 @@ import 'package:omit/models/models.dart';
 import 'package:omit/notifiers/notifiers.dart';
 import 'package:omit/screens/article_list_screen.dart';
 import 'package:omit/screens/bookmarks_screen.dart';
-import 'package:omit/widgets/add_feed_dialog.dart';
-import 'package:omit/widgets/cached_image.dart';
+import 'package:omit/widgets/widgets.dart';
 import 'package:provider/provider.dart';
 
 /// Main screen displaying all subscribed RSS feeds.
@@ -44,7 +43,16 @@ class _FeedsScreenState extends State<FeedsScreen> {
           ),
         ],
       ),
-      drawer: _buildDrawer(context),
+      drawer: AppDrawer(
+        onImportFeeds: () {
+          Navigator.pop(context);
+          unawaited(_importFeeds(context));
+        },
+        onExportFeeds: () {
+          Navigator.pop(context);
+          unawaited(_exportFeeds(context));
+        },
+      ),
       body: Consumer<FeedNotifier>(
         builder: (context, feedNotifier, child) {
           if (feedNotifier.isLoading && feedNotifier.feeds.isEmpty) {
@@ -75,58 +83,6 @@ class _FeedsScreenState extends State<FeedsScreen> {
         onPressed: () => _showAddFeedDialog(context),
         tooltip: 'Add Feed',
         child: const Icon(Icons.add),
-      ),
-    );
-  }
-
-  Widget _buildDrawer(BuildContext context) {
-    return Drawer(
-      child: ListView(
-        padding: EdgeInsets.zero,
-        children: [
-          DrawerHeader(
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primary,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'OMIT',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'RSS Reader',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.8),
-                    fontSize: 16,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          ListTile(
-            leading: const Icon(Icons.file_download_outlined),
-            title: const Text('Import Feeds'),
-            onTap: () {
-              Navigator.pop(context);
-              unawaited(_importFeeds(context));
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.file_upload_outlined),
-            title: const Text('Export Feeds'),
-            onTap: () {
-              Navigator.pop(context);
-              unawaited(_exportFeeds(context));
-            },
-          ),
-        ],
       ),
     );
   }
@@ -255,24 +211,29 @@ class _FeedsScreenState extends State<FeedsScreen> {
   }
 
   Widget _buildEmptyState(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.rss_feed, size: 80, color: Colors.grey.shade400),
+            Icon(Icons.rss_feed, size: 80, color: colorScheme.outlineVariant),
             const SizedBox(height: 16),
             Text(
-              'No feeds yet',
-              style: Theme.of(
-                context,
-              ).textTheme.headlineSmall?.copyWith(color: Colors.grey.shade600),
+              'No articles',
+              style: textTheme.headlineSmall?.copyWith(
+                color: colorScheme.onSurface,
+              ),
             ),
             const SizedBox(height: 8),
             Text(
-              'Tap the + button to add your first RSS feed',
-              style: Theme.of(context).textTheme.bodyMedium,
+              'Pull down to refresh',
+              style: textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
               textAlign: TextAlign.center,
             ),
           ],
@@ -295,14 +256,16 @@ class _FeedTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Dismissible(
       key: Key(feed.id),
       direction: DismissDirection.endToStart,
       background: Container(
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 20),
-        color: Colors.red,
-        child: const Icon(Icons.delete, color: Colors.white),
+        color: colorScheme.error,
+        child: Icon(Icons.delete, color: colorScheme.onError),
       ),
       confirmDismiss: (_) async {
         return showDialog<bool>(
@@ -317,7 +280,7 @@ class _FeedTile extends StatelessWidget {
               ),
               TextButton(
                 onPressed: () => Navigator.pop(context, true),
-                style: TextButton.styleFrom(foregroundColor: Colors.red),
+                style: TextButton.styleFrom(foregroundColor: colorScheme.error),
                 child: const Text('Delete'),
               ),
             ],
@@ -333,35 +296,69 @@ class _FeedTile extends StatelessWidget {
       child: Card(
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         child: ListTile(
-          leading: _buildFeedIcon(),
-          title: Text(feed.title, maxLines: 1, overflow: TextOverflow.ellipsis),
+          leading: _buildFeedIcon(context),
+          title: Text(
+            feed.title,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+              fontSize: 16,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
           subtitle: feed.description != null
               ? Text(
                   feed.description!,
-                  maxLines: 1,
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 )
               : null,
-          trailing: feed.unreadCount > 0
-              ? Container(
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (feed.unreadCount > 0)
+                Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 8,
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primary,
+                    color: colorScheme.primary,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
                     '${feed.unreadCount}',
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: colorScheme.onPrimary,
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                )
-              : null,
+                ),
+              PopupMenuButton<String>(
+                padding: EdgeInsets.zero,
+                icon: const Icon(Icons.more_vert),
+                tooltip: 'Feed Options',
+                onSelected: (value) {
+                  if (value == 'rename') {
+                    _showRenameDialog(context);
+                  }
+                },
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: 'rename',
+                    child: Row(
+                      children: [
+                        Icon(Icons.edit, size: 20),
+                        SizedBox(width: 8),
+                        Text('Rename'),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
           onTap: () {
             unawaited(
               Navigator.push(
@@ -377,14 +374,56 @@ class _FeedTile extends StatelessWidget {
     );
   }
 
-  Widget _buildFeedIcon() {
+  void _showRenameDialog(BuildContext context) {
+    final controller = TextEditingController(text: feed.title);
+
+    unawaited(
+      showDialog<void>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Rename Feed'),
+          content: TextField(
+            controller: controller,
+            decoration: const InputDecoration(
+              labelText: 'Feed Title',
+              border: OutlineInputBorder(),
+            ),
+            autofocus: true,
+            textCapitalization: TextCapitalization.sentences,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                final newTitle = controller.text.trim();
+                if (newTitle.isNotEmpty) {
+                  unawaited(
+                    context.read<FeedNotifier>().renameFeed(feed.id, newTitle),
+                  );
+                }
+                Navigator.pop(context);
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFeedIcon(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     if (feed.iconUrl != null) {
       return Container(
         width: 40,
         height: 40,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(8),
-          color: Colors.grey.shade200,
+          color: colorScheme.surfaceContainerHighest,
         ),
         clipBehavior: Clip.antiAlias,
         child: CachedImage(
@@ -393,18 +432,23 @@ class _FeedTile extends StatelessWidget {
         ),
       );
     }
-    return _buildDefaultIcon();
+    return _buildDefaultIcon(context);
   }
 
-  Widget _buildDefaultIcon() {
+  Widget _buildDefaultIcon(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       width: 40,
       height: 40,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(8),
-        color: Colors.blue.shade100,
+        color: colorScheme.secondaryContainer,
       ),
-      child: Icon(Icons.rss_feed, color: Colors.blue.shade700, size: 24),
+      child: Icon(
+        Icons.rss_feed,
+        color: colorScheme.onSecondaryContainer,
+        size: 24,
+      ),
     );
   }
 }

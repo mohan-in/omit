@@ -84,4 +84,13 @@ class Article extends HiveObject {
       isBookmarked: isBookmarked ?? this.isBookmarked,
     );
   }
+
+  /// Estimated reading time in minutes (based on 200 words/min).
+  int get readingTime {
+    if (content == null || content!.isEmpty) return 1;
+    // Strip HTML tags for more accurate word count
+    final text = content!.replaceAll(RegExp('<[^>]*>'), '');
+    final wordCount = RegExp(r'\w+').allMatches(text).length;
+    return (wordCount / 200).ceil();
+  }
 }

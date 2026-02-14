@@ -34,6 +34,22 @@ class _ArticleListScreenState extends State<ArticleListScreen> {
       appBar: AppBar(
         title: Text(widget.feed.title),
         actions: [
+          // Read/Unread Filter
+          Consumer<ArticleNotifier>(
+            builder: (context, notifier, _) {
+              return IconButton(
+                icon: Icon(
+                  notifier.showUnreadOnly
+                      ? Icons.filter_alt
+                      : Icons.filter_alt_outlined,
+                ),
+                tooltip: notifier.showUnreadOnly
+                    ? 'Show all articles'
+                    : 'Show unread only',
+                onPressed: notifier.toggleReadFilter,
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.refresh),
             tooltip: 'Refresh',
@@ -71,24 +87,33 @@ class _ArticleListScreenState extends State<ArticleListScreen> {
   }
 
   Widget _buildEmptyState() {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.article_outlined, size: 80, color: Colors.grey.shade400),
+            Icon(
+              Icons.article_outlined,
+              size: 80,
+              color: colorScheme.outlineVariant,
+            ),
             const SizedBox(height: 16),
             Text(
               'No articles',
-              style: Theme.of(
-                context,
-              ).textTheme.headlineSmall?.copyWith(color: Colors.grey.shade600),
+              style: textTheme.headlineSmall?.copyWith(
+                color: colorScheme.onSurface,
+              ),
             ),
             const SizedBox(height: 8),
             Text(
               'Pull down to refresh',
-              style: Theme.of(context).textTheme.bodyMedium,
+              style: textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
             ),
           ],
         ),
@@ -132,6 +157,8 @@ class _ArticleTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final dateFormat = DateFormat('MMM d, yyyy');
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -165,14 +192,14 @@ class _ArticleTile extends StatelessWidget {
                     // Title
                     Text(
                       article.title,
-                      style: TextStyle(
+                      style: textTheme.titleMedium?.copyWith(
                         fontSize: 15,
                         fontWeight: article.isRead
                             ? FontWeight.normal
                             : FontWeight.w600,
                         color: article.isRead
-                            ? Colors.grey.shade600
-                            : Colors.black87,
+                            ? colorScheme.onSurface.withValues(alpha: 0.6)
+                            : colorScheme.onSurface,
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
@@ -184,9 +211,9 @@ class _ArticleTile extends StatelessWidget {
                     if (article.description != null)
                       Text(
                         article.description!,
-                        style: TextStyle(
+                        style: textTheme.bodySmall?.copyWith(
                           fontSize: 13,
-                          color: Colors.grey.shade600,
+                          color: colorScheme.onSurfaceVariant,
                         ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
@@ -202,14 +229,14 @@ class _ArticleTile extends StatelessWidget {
                           Icon(
                             Icons.access_time,
                             size: 14,
-                            color: Colors.grey.shade500,
+                            color: colorScheme.outline,
                           ),
                           const SizedBox(width: 4),
                           Text(
                             dateFormat.format(article.pubDate!),
-                            style: TextStyle(
+                            style: textTheme.bodySmall?.copyWith(
                               fontSize: 12,
-                              color: Colors.grey.shade500,
+                              color: colorScheme.outline,
                             ),
                           ),
                         ],
@@ -221,7 +248,7 @@ class _ArticleTile extends StatelessWidget {
                           Icon(
                             Icons.bookmark,
                             size: 18,
-                            color: Theme.of(context).colorScheme.primary,
+                            color: colorScheme.primary,
                           ),
 
                         // Unread indicator
@@ -232,7 +259,7 @@ class _ArticleTile extends StatelessWidget {
                             margin: const EdgeInsets.only(left: 8),
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: Theme.of(context).colorScheme.primary,
+                              color: colorScheme.primary,
                             ),
                           ),
                       ],

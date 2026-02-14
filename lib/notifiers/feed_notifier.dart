@@ -77,6 +77,26 @@ class FeedNotifier extends ChangeNotifier {
     } on Object catch (e) {
       _error = 'Failed to refresh feed: $e';
       notifyListeners();
+      notifyListeners();
+    }
+  }
+
+  /// Rename a feed.
+  Future<void> renameFeed(String feedId, String newTitle) async {
+    try {
+      final index = _feeds.indexWhere((f) => f.id == feedId);
+      if (index != -1) {
+        final updatedFeed = _feeds[index].copyWith(title: newTitle);
+        // Optimistic update
+        _feeds[index] = updatedFeed;
+        notifyListeners();
+
+        await _repository.updateFeed(updatedFeed);
+      }
+    } on Object catch (e) {
+      _error = 'Failed to rename feed: $e';
+      notifyListeners();
+      // Revert if needed, but for now we just show error
     }
   }
 

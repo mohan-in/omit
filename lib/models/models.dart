@@ -3,3 +3,4 @@ library;
 
 export 'article.dart';
 export 'feed.dart';
+export 'reader_settings.dart';

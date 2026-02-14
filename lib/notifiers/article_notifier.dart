@@ -12,13 +12,28 @@ class ArticleNotifier extends ChangeNotifier {
   final ArticleRepository _repository;
 
   List<Article> _articles = [];
+  final Map<String, String> _articleErrors = {};
   String? _currentFeedId;
   bool _isLoading = false;
+  bool _showUnreadOnly = false;
 
   // Getters
-  List<Article> get articles => List.unmodifiable(_articles);
+  List<Article> get articles {
+    if (_showUnreadOnly) {
+      return List.unmodifiable(_articles.where((a) => !a.isRead));
+    }
+    return List.unmodifiable(_articles);
+  }
+
   String? get currentFeedId => _currentFeedId;
   bool get isLoading => _isLoading;
+  bool get showUnreadOnly => _showUnreadOnly;
+
+  /// Toggle the read/unread filter.
+  void toggleReadFilter() {
+    _showUnreadOnly = !_showUnreadOnly;
+    notifyListeners();
+  }
 
   /// Load articles for a specific feed.
   void loadArticlesForFeed(String feedId) {
@@ -34,8 +49,13 @@ class ArticleNotifier extends ChangeNotifier {
 
   /// Get an article by ID.
   Article? getArticle(String articleId) {
+    final index = _articles.indexWhere((a) => a.id == articleId);
+    if (index != -1) return _articles[index];
     return _repository.getArticle(articleId);
   }
+
+  /// Get error message for a specific article, if any.
+  String? getArticleError(String articleId) => _articleErrors[articleId];
 
   /// Load article content (for Reader Mode).
   Future<void> loadArticleContent(String articleId) async {
@@ -44,6 +64,12 @@ class ArticleNotifier extends ChangeNotifier {
 
     // Use repository to fetch content
     try {
+      // Clear previous error
+      if (_articleErrors.containsKey(articleId)) {
+        _articleErrors.remove(articleId);
+        notifyListeners();
+      }
+
       final (title, content, author) = await _repository.fetchArticleContent(
         article.link,
       );
@@ -59,9 +85,9 @@ class ArticleNotifier extends ChangeNotifier {
         notifyListeners();
       }
     } on Exception catch (e) {
-      // Handle error (could expose an error state if needed)
+      _articleErrors[articleId] = e.toString();
+      notifyListeners();
       debugPrint('Failed to load article content: $e');
-      rethrow;
     }
   }
 
@@ -117,6 +143,23 @@ class ArticleNotifier extends ChangeNotifier {
     required bool isEnabled,
   }) async {
     await _repository.setFeedReaderMode(feedId, isEnabled: isEnabled);
+    notifyListeners();
+  }
+
+  // Reader Mode Settings
+  ReaderSettings _readerSettings = const ReaderSettings();
+  ReaderSettings get readerSettings => _readerSettings;
+
+  void updateReaderSettings({
+    ReaderFont? font,
+    double? fontSizeScale,
+    ReaderTheme? theme,
+  }) {
+    _readerSettings = _readerSettings.copyWith(
+      font: font,
+      fontSizeScale: fontSizeScale,
+      theme: theme,
+    );
     notifyListeners();
   }
 }
