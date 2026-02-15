@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 
 import 'package:omit/models/models.dart';
 import 'package:omit/repositories/repositories.dart';
@@ -13,6 +13,8 @@ class ArticleNotifier extends ChangeNotifier {
 
   List<Article> _articles = [];
   final Map<String, String> _articleErrors = {};
+  final Set<String> _loadingArticleIds = {};
+  final Set<String> _fullyFetchedArticleIds = {};
   String? _currentFeedId;
   bool _isLoading = false;
   bool _showUnreadOnly = false;
@@ -57,13 +59,30 @@ class ArticleNotifier extends ChangeNotifier {
   /// Get error message for a specific article, if any.
   String? getArticleError(String articleId) => _articleErrors[articleId];
 
+  /// Check if an article is currently loading content.
+  bool isArticleLoading(String articleId) =>
+      _loadingArticleIds.contains(articleId);
+
+  /// Check if an article has had its full content explicitly fetched.
+  bool isArticleFullyFetched(String articleId) =>
+      _fullyFetchedArticleIds.contains(articleId);
+
   /// Load article content (for Reader Mode).
   Future<void> loadArticleContent(String articleId) async {
     final article = getArticle(articleId);
-    if (article == null || article.content != null) return;
+
+    // Don't fetch if already fully fetched in this session
+    if (article == null ||
+        _fullyFetchedArticleIds.contains(articleId) ||
+        _loadingArticleIds.contains(articleId)) {
+      return;
+    }
 
     // Use repository to fetch content
     try {
+      _loadingArticleIds.add(articleId);
+      notifyListeners();
+
       // Clear previous error
       if (_articleErrors.containsKey(articleId)) {
         _articleErrors.remove(articleId);
@@ -82,12 +101,16 @@ class ArticleNotifier extends ChangeNotifier {
           content: content,
           author: author ?? _articles[index].author,
         );
+        _fullyFetchedArticleIds.add(articleId);
         notifyListeners();
       }
     } on Exception catch (e) {
       _articleErrors[articleId] = e.toString();
       notifyListeners();
       debugPrint('Failed to load article content: $e');
+    } finally {
+      _loadingArticleIds.remove(articleId);
+      notifyListeners();
     }
   }
 

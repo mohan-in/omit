@@ -31,8 +31,7 @@ class _ReaderModeViewState extends State<ReaderModeView> {
       if (!mounted) return;
       final notifier = context.read<ArticleNotifier>();
       final article = notifier.getArticle(widget.article.id) ?? widget.article;
-
-      if (article.content == null) {
+      if (!notifier.isArticleFullyFetched(article.id)) {
         unawaited(notifier.loadArticleContent(article.id));
       }
     });
@@ -63,6 +62,17 @@ class _ReaderModeViewState extends State<ReaderModeView> {
         slivers: [
           _buildAppBar(article, settings),
           SliverToBoxAdapter(
+            child: Builder(
+              builder: (context) {
+                final isLoading = context.select<ArticleNotifier, bool>(
+                  (n) => n.isArticleLoading(article.id),
+                );
+                if (!isLoading) return const SizedBox.shrink();
+                return const LinearProgressIndicator(minHeight: 2);
+              },
+            ),
+          ),
+          SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
               child: Column(
@@ -87,7 +97,9 @@ class _ReaderModeViewState extends State<ReaderModeView> {
       expandedHeight: article.imageUrl != null ? 300 : kToolbarHeight,
       pinned: true,
       backgroundColor: settings.backgroundColor,
-      iconTheme: IconThemeData(color: settings.textColor),
+      iconTheme: IconThemeData(
+        color: article.imageUrl != null ? Colors.white : settings.textColor,
+      ),
       actions: [
         IconButton(
           icon: const Icon(Icons.text_format),
@@ -112,11 +124,29 @@ class _ReaderModeViewState extends State<ReaderModeView> {
           : null,
       flexibleSpace: article.imageUrl != null
           ? FlexibleSpaceBar(
-              background: CachedImage(
-                imageUrl: article.imageUrl!,
-                width: double.infinity,
-                height: 300,
-                fit: BoxFit.cover,
+              background: Stack(
+                fit: StackFit.expand,
+                children: [
+                  CachedImage(
+                    imageUrl: article.imageUrl!,
+                    width: double.infinity,
+                    height: 300,
+                    fit: BoxFit.cover,
+                  ),
+                  const DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.black54,
+                          Colors.transparent,
+                        ],
+                        stops: [0.0, 0.3],
+                      ),
+                    ),
+                  ),
+                ],
               ),
             )
           : null,
