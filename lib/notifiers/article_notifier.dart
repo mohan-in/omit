@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:developer' as developer;
+
 import 'package:flutter/widgets.dart';
 
 import 'package:omit/models/models.dart';
@@ -42,9 +45,20 @@ class ArticleNotifier extends ChangeNotifier with ErrorNotifierMixin {
   void loadArticlesForFeed(String feedId) {
     _isLoading = true;
     _currentFeedId = feedId;
+    // Clear fully fetched cache as we are reloading data
+    _fullyFetchedArticleIds.clear();
     notifyListeners();
 
     _articles = _repository.getArticlesForFeed(feedId);
+
+    // Re-populate _fullyFetchedArticleIds based on actual content availability
+    // This handles cases where persistence worked (content is present)
+    // or didn't (content is null, so we need to fetch again).
+    for (final article in _articles) {
+      if (article.content != null && article.content!.isNotEmpty) {
+        _fullyFetchedArticleIds.add(article.id);
+      }
+    }
 
     _isLoading = false;
     notifyListeners();
@@ -73,9 +87,11 @@ class ArticleNotifier extends ChangeNotifier with ErrorNotifierMixin {
     final article = getArticle(articleId);
 
     // Don't fetch if already fully fetched in this session
+    // Don't fetch if already fully fetched in this session
+    // AND content is actually there (double check)
     if (article == null ||
-        _fullyFetchedArticleIds.contains(articleId) ||
-        _loadingArticleIds.contains(articleId)) {
+        (_fullyFetchedArticleIds.contains(articleId) &&
+            article.content != null)) {
       return;
     }
 
@@ -90,9 +106,10 @@ class ArticleNotifier extends ChangeNotifier with ErrorNotifierMixin {
         notifyListeners();
       }
 
-      final (title, content, author) = await _repository.fetchArticleContent(
-        article.link,
-      );
+      final (title, content, author, leadImage) = await _repository
+          .fetchArticleContent(
+            article.link,
+          );
 
       // Update the article in the list with new content
       final index = _articles.indexWhere((a) => a.id == articleId);
@@ -101,14 +118,21 @@ class ArticleNotifier extends ChangeNotifier with ErrorNotifierMixin {
           title: title ?? _articles[index].title,
           content: content,
           author: author ?? _articles[index].author,
+          imageUrl: leadImage ?? _articles[index].imageUrl,
         );
         _fullyFetchedArticleIds.add(articleId);
+        if (leadImage != null) {
+          developer.log('Updated article with lead image: $leadImage');
+        }
         notifyListeners();
+
+        // Persist update (so list view gets high res image next time)
+        unawaited(_repository.updateArticle(_articles[index]));
       }
     } on Exception catch (e) {
       _articleErrors[articleId] = e.toString();
       notifyListeners();
-      debugPrint('Failed to load article content: $e');
+      developer.log('Failed to load article content: $e');
     } finally {
       _loadingArticleIds.remove(articleId);
       notifyListeners();

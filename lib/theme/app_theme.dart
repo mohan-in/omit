@@ -12,12 +12,9 @@ class AppTheme {
 
   static ThemeData get lightTheme {
     final colorScheme = ColorScheme.fromSeed(
-      seedColor: _primaryColor,
+      seedColor: Colors.blue,
       primary: _primaryColor, // Force primary to match seed for consistency
       surface: _surfaceColor,
-      // Make the background slightly off-white to let cards pop
-      surfaceContainerLowest: const Color(0xFFF5F5F5), // Colors.grey[100]
-      outlineVariant: const Color(0xFFEEEEEE), // Colors.grey[200]
     );
 
     return ThemeData(
@@ -28,7 +25,7 @@ class AppTheme {
 
       // Set distinct background color for the scaffold
       // to differentiate from cards
-      scaffoldBackgroundColor: colorScheme.surfaceContainerLowest,
+      // scaffoldBackgroundColor: colorScheme.surfaceContainerLowest,
 
       // AppBar theme: "Bold Primary" style
       // Uses the primary color for background and white for text/icons
@@ -67,7 +64,7 @@ class AppTheme {
       cardTheme: const CardThemeData(
         elevation: 2, // Add elevation for depth
         margin: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-        color: _surfaceColor,
+        // color: _surfaceColor,
         clipBehavior: Clip.antiAlias,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.all(Radius.circular(16)),

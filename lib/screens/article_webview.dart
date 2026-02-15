@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer' as developer;
 
 import 'package:adblocker_webview/adblocker_webview.dart';
 import 'package:flutter/material.dart';
@@ -93,7 +94,7 @@ class _ArticleWebViewState extends State<ArticleWebView> {
               });
             },
             onLoadError: (url, code) {
-              debugPrint('Error loading $url: $code');
+              developer.log('Error loading $url: $code');
               if (mounted) {
                 setState(() {
                   _isLoading = false;

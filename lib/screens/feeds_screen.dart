@@ -230,6 +230,7 @@ class _FeedTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
 
     return Dismissible(
       key: Key(feed.id),
@@ -267,71 +268,9 @@ class _FeedTile extends StatelessWidget {
         ).showSnackBar(SnackBar(content: Text('${feed.title} deleted')));
       },
       child: Card(
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-        child: ListTile(
-          leading: _buildFeedIcon(context),
-          title: Text(
-            feed.title,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-              fontSize: 16,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          subtitle: feed.description != null
-              ? Text(
-                  feed.description!,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                )
-              : null,
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (feed.unreadCount > 0)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: colorScheme.primary,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    '${feed.unreadCount}',
-                    style: TextStyle(
-                      color: colorScheme.onPrimary,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              PopupMenuButton<String>(
-                padding: EdgeInsets.zero,
-                icon: const Icon(Icons.more_vert),
-                tooltip: 'Feed Options',
-                onSelected: (value) {
-                  if (value == 'rename') {
-                    _showRenameDialog(context);
-                  }
-                },
-                itemBuilder: (context) => [
-                  const PopupMenuItem(
-                    value: 'rename',
-                    child: Row(
-                      children: [
-                        Icon(Icons.edit, size: 20),
-                        SizedBox(width: 8),
-                        Text('Rename'),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
+        elevation: 2,
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: InkWell(
           onTap: () {
             unawaited(
               Navigator.push(
@@ -342,6 +281,76 @@ class _FeedTile extends StatelessWidget {
               ),
             );
           },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: ListTile(
+              leading: _buildFeedIcon(context),
+              title: Text(
+                feed.title,
+                style: textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              subtitle: feed.description != null
+                  ? Text(
+                      feed.description!,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    )
+                  : null,
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (feed.unreadCount > 0)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: colorScheme.primary,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        '${feed.unreadCount}',
+                        style: TextStyle(
+                          color: colorScheme.onPrimary,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  PopupMenuButton<String>(
+                    padding: EdgeInsets.zero,
+                    icon: const Icon(Icons.more_vert),
+                    tooltip: 'Feed Options',
+                    onSelected: (value) {
+                      if (value == 'rename') {
+                        _showRenameDialog(context);
+                      }
+                    },
+                    itemBuilder: (context) => [
+                      const PopupMenuItem(
+                        value: 'rename',
+                        child: Row(
+                          children: [
+                            Icon(Icons.edit, size: 20),
+                            SizedBox(width: 8),
+                            Text('Rename'),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
         ),
       ),
     );
@@ -374,7 +383,10 @@ class _FeedTile extends StatelessWidget {
                 final newTitle = controller.text.trim();
                 if (newTitle.isNotEmpty) {
                   unawaited(
-                    context.read<FeedNotifier>().renameFeed(feed.id, newTitle),
+                    context.read<FeedNotifier>().renameFeed(
+                      feed.id,
+                      newTitle,
+                    ),
                   );
                 }
                 Navigator.pop(context);
@@ -388,19 +400,12 @@ class _FeedTile extends StatelessWidget {
   }
 
   Widget _buildFeedIcon(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
     if (feed.iconUrl != null) {
-      return Container(
-        width: 40,
-        height: 40,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(8),
-          color: colorScheme.surfaceContainerHighest,
-        ),
-        clipBehavior: Clip.antiAlias,
+      return ClipOval(
         child: CachedImage(
           imageUrl: feed.iconUrl!,
+          width: 40,
+          height: 40,
           fit: BoxFit.cover,
         ),
       );
@@ -410,13 +415,9 @@ class _FeedTile extends StatelessWidget {
 
   Widget _buildDefaultIcon(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    return Container(
-      width: 40,
-      height: 40,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8),
-        color: colorScheme.secondaryContainer,
-      ),
+    return CircleAvatar(
+      radius: 20,
+      backgroundColor: colorScheme.secondaryContainer,
       child: Icon(
         Icons.rss_feed,
         color: colorScheme.onSecondaryContainer,

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer' as developer;
 import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
@@ -31,7 +32,7 @@ class ImportExportService {
         return path;
       }
     } catch (e) {
-      debugPrint('Export failed: $e');
+      developer.log('Export failed: $e');
       rethrow;
     }
     return null;
@@ -56,7 +57,7 @@ class ImportExportService {
             .toList();
       }
     } catch (e) {
-      debugPrint('Import failed: $e');
+      developer.log('Import failed: $e');
       rethrow;
     }
     return [];

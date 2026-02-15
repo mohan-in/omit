@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer' as developer;
 import 'dart:io';
 
 import 'package:dart_rss/dart_rss.dart';
@@ -52,22 +53,35 @@ class RssService {
     return feed.title;
   }
 
-  (Feed, List<Article>) _parseRssFeed(
+  Future<(Feed, List<Article>)> _parseRssFeed(
     String body,
     String url,
     String? existingFeedId,
-  ) {
+  ) async {
     final rssFeed = RssFeed.parse(body);
 
     final feedId =
         existingFeedId ?? DateTime.now().millisecondsSinceEpoch.toString();
+
+    // Try to get icon from feed, then site, then Google
+    var iconUrl = rssFeed.image?.url;
+    if (iconUrl != null && !_isValidImageUrl(iconUrl)) {
+      iconUrl = null;
+    }
+
+    if (iconUrl == null && rssFeed.link != null) {
+      developer.log('Fetching site icon for ${rssFeed.link}');
+      iconUrl = await _fetchSiteIcon(rssFeed.link!);
+      developer.log('Found icon: $iconUrl');
+    }
+    iconUrl ??= _getFaviconUrl(url);
 
     final feed = Feed(
       id: feedId,
       title: _sanitizeText(rssFeed.title) ?? 'Untitled Feed',
       url: url,
       description: _sanitizeText(rssFeed.description),
-      iconUrl: rssFeed.image?.url ?? _getFaviconUrl(url),
+      iconUrl: iconUrl,
       lastUpdated: DateTime.now(),
     );
 
@@ -84,7 +98,7 @@ class RssService {
         content: _sanitizeContent(item.content?.value),
         author: _sanitizeText(item.author ?? item.dc?.creator),
         pubDate: _parseDate(item.pubDate),
-        imageUrl: _extractImageUrl(item),
+        imageUrl: _extractImageUrl(item, url),
       );
       articles.add(article);
     }
@@ -92,22 +106,42 @@ class RssService {
     return (feed, articles);
   }
 
-  (Feed, List<Article>) _parseAtomFeed(
+  Future<(Feed, List<Article>)> _parseAtomFeed(
     String body,
     String url,
     String? existingFeedId,
-  ) {
+  ) async {
     final atomFeed = AtomFeed.parse(body);
 
     final feedId =
         existingFeedId ?? DateTime.now().millisecondsSinceEpoch.toString();
+
+    // Try to get icon from feed, then site, then Google
+    var iconUrl = atomFeed.icon ?? atomFeed.logo;
+    if (iconUrl != null && !_isValidImageUrl(iconUrl)) {
+      iconUrl = null;
+    }
+
+    if (iconUrl == null && atomFeed.links.isNotEmpty) {
+      // Find 'alternate' link or just first link
+      final link = atomFeed.links.firstWhere(
+        (l) => l.rel == 'alternate',
+        orElse: () => atomFeed.links.first,
+      );
+      if (link.href != null) {
+        developer.log('Fetching site icon for Atom feed: ${link.href}');
+        iconUrl = await _fetchSiteIcon(link.href!);
+        developer.log('Found Atom icon: $iconUrl');
+      }
+    }
+    iconUrl ??= _getFaviconUrl(url);
 
     final feed = Feed(
       id: feedId,
       title: _sanitizeText(atomFeed.title) ?? 'Untitled Feed',
       url: url,
       description: _sanitizeText(atomFeed.subtitle),
-      iconUrl: atomFeed.icon ?? atomFeed.logo ?? _getFaviconUrl(url),
+      iconUrl: iconUrl,
       lastUpdated: DateTime.now(),
     );
 
@@ -127,7 +161,7 @@ class RssService {
             ? _sanitizeText(entry.authors.first.name)
             : null,
         pubDate: _parseDate(entry.updated ?? entry.published),
-        imageUrl: _extractAtomImageUrl(entry),
+        imageUrl: _extractAtomImageUrl(entry, url),
       );
       articles.add(article);
     }
@@ -146,6 +180,68 @@ class RssService {
       return 'https://www.google.com/s2/favicons?domain=$domain&sz=64';
     } on FormatException catch (_) {
       return '';
+    }
+  }
+
+  /// Fetches site icon by scraping the homepage.
+  /// PRIORITIZES Apple Touch Icon or high-res icons.
+  Future<String?> _fetchSiteIcon(String siteUrl) async {
+    try {
+      final response = await _client.get(Uri.parse(siteUrl));
+      if (response.statusCode != 200) return null;
+
+      final document = html_parser.parse(response.body);
+
+      // Look for high quality icons
+      final icons = <String, int>{}; // url -> priority (higher is better)
+
+      for (final link in document.querySelectorAll('link[rel*="icon"]')) {
+        final href = link.attributes['href'];
+        if (href == null) continue;
+
+        // Skip data URIs
+        if (href.startsWith('data:')) continue;
+
+        // Skip SVGs
+        if (href.toLowerCase().endsWith('.svg')) continue;
+
+        // Resolve relative URLs
+        var fullUrl = href;
+        if (!href.startsWith('http')) {
+          final uri = Uri.parse(siteUrl);
+          if (href.startsWith('//')) {
+            fullUrl = '${uri.scheme}:$href';
+          } else if (href.startsWith('/')) {
+            fullUrl = '${uri.scheme}://${uri.host}$href';
+          } else {
+            // Simplification: assume root relative or simple relative work
+            // for now
+            // Better to resolve properly if robust
+            fullUrl = uri.resolve(href).toString();
+          }
+        }
+
+        final rel = link.attributes['rel']?.toLowerCase() ?? '';
+
+        if (rel.contains('apple-touch-icon')) {
+          icons[fullUrl] = 10;
+        } else if (rel.contains('shortcut icon')) {
+          icons[fullUrl] = 5;
+        } else {
+          icons[fullUrl] = 1;
+        }
+      }
+
+      if (icons.isEmpty) return null;
+
+      // Sort by priority
+      final sortedEntries = icons.entries.toList()
+        ..sort((a, b) => b.value.compareTo(a.value));
+
+      return sortedEntries.first.key;
+    } on Exception catch (e) {
+      developer.log('Failed to fetch site icon for $siteUrl: $e');
+      return null;
     }
   }
 
@@ -227,39 +323,196 @@ class RssService {
     throw FormatException('Cannot parse date: $dateStr');
   }
 
-  String? _extractImageUrl(RssItem item) {
-    // Try enclosure first (common for podcasts and image feeds)
-    if (item.enclosure?.url != null &&
-        (item.enclosure!.type?.startsWith('image/') ?? false)) {
-      return item.enclosure!.url;
+  String? _extractImageUrl(RssItem item, String baseUrl) {
+    // Try media:content first - usually high quality
+    if (item.media?.contents.isNotEmpty ?? false) {
+      // Find best quality image (largest width)
+      var bestMedia = item.media!.contents.first;
+      var maxWidth = 0;
+
+      for (final media in item.media!.contents) {
+        if (media.url == null) continue;
+        // Check if it's an image type
+        if (media.type?.startsWith('image/') == false) continue;
+
+        // Extra check for extension if type is generic or missing
+        if (media.url != null && !_isValidImageUrl(media.url!)) continue;
+
+        if (media.width > maxWidth) {
+          maxWidth = media.width;
+          bestMedia = media;
+        }
+      }
+
+      if (bestMedia.url != null) {
+        developer.log(
+          'Extracted high-quality image from media:content: ${bestMedia.url}',
+        );
+        return bestMedia.url;
+      }
     }
 
-    // Try media:content
-    if (item.media?.contents.isNotEmpty ?? false) {
-      final media = item.media!.contents.first;
-      if (media.url != null) return media.url;
+    // Try enclosure
+    if (item.enclosure?.url != null &&
+        (item.enclosure!.type?.startsWith('image/') ?? false) &&
+        _isValidImageUrl(item.enclosure!.url!)) {
+      return item.enclosure!.url;
     }
 
     // Try media:thumbnail
     if (item.media?.thumbnails.isNotEmpty ?? false) {
-      return item.media!.thumbnails.first.url;
+      final thumb = item.media!.thumbnails.first.url;
+      if (thumb != null && _isValidImageUrl(thumb)) {
+        return thumb;
+      }
     }
 
     // Try to extract from content/description
-    return _extractImageFromHtml(item.content?.value ?? item.description);
+    return _extractImageFromHtml(
+      item.content?.value ?? item.description,
+      baseUrl,
+    );
   }
 
-  String? _extractAtomImageUrl(AtomItem entry) {
+  String? _extractAtomImageUrl(AtomItem entry, String baseUrl) {
     // Try to extract from content
-    return _extractImageFromHtml(entry.content);
+    return _extractImageFromHtml(entry.content, baseUrl);
   }
 
-  String? _extractImageFromHtml(String? html) {
+  String? _extractImageFromHtml(String? html, String baseUrl) {
     if (html == null) return null;
 
-    final imgRegex = RegExp('<img[^>]+src="([^"]+)"');
-    final match = imgRegex.firstMatch(html);
-    return match?.group(1);
+    try {
+      final document = html_parser.parseFragment(html);
+      final images = document.querySelectorAll('img');
+      final candidates = <String, int>{};
+
+      for (final img in images) {
+        var src = img.attributes['src'];
+        if (src == null) continue;
+
+        // Resolve relative URLs
+        if (!src.startsWith('http')) {
+          if (src.startsWith('data:')) {
+            continue;
+          }
+
+          try {
+            final base = Uri.parse(baseUrl);
+            src = base.resolve(src).toString();
+          } on Object catch (_) {
+            continue;
+          }
+        }
+
+        // Skip SVGs
+        if (src.toLowerCase().endsWith('.svg')) continue;
+
+        // Skip tracking pixels or tiny icons
+        final width = int.tryParse(img.attributes['width'] ?? '');
+        final height = int.tryParse(img.attributes['height'] ?? '');
+
+        if (width != null && width < 50) {
+          continue;
+        }
+        if (height != null && height < 50) {
+          continue;
+        }
+
+        // Skip common ad/tracking patterns
+        if (src.contains('doubleclick') || src.contains('ads')) continue;
+
+        if (_isValidImageUrl(src)) {
+          // Calculate score
+          var score = 10; // Base score
+
+          // Size boost
+          if (width != null) {
+            if (width >= 800) {
+              score += 20;
+            } else if (width >= 400) {
+              score += 10;
+            }
+          }
+
+          // Keyword boost
+          final lowerSrc = src.toLowerCase();
+          if (lowerSrc.contains('cover') ||
+              lowerSrc.contains('banner') ||
+              lowerSrc.contains('hero') ||
+              lowerSrc.contains('feature')) {
+            score += 15;
+          }
+
+          // Keyword penalty
+          if (lowerSrc.contains('icon') ||
+              lowerSrc.contains('logo') ||
+              lowerSrc.contains('avatar') ||
+              lowerSrc.contains('button')) {
+            score -= 5;
+          }
+
+          // Ratio check if both dimensions available
+          if (width != null && height != null && height > 0) {
+            final ratio = width / height;
+            // Penalize extreme aspect ratios
+            if (ratio > 3 || ratio < 0.3) {
+              score -= 5;
+            }
+          }
+
+          candidates[src] = score;
+        }
+      }
+
+      if (candidates.isNotEmpty) {
+        final sorted = candidates.entries.toList()
+          ..sort((a, b) => b.value.compareTo(a.value));
+        return sorted.first.key;
+      }
+    } on Exception catch (_) {
+      // Fallback to simple regex if HTML parsing fails
+      // Iterate through matches to find best one
+      final imgRegex = RegExp('<img[^>]+src="([^"]+)"');
+      final matches = imgRegex.allMatches(html);
+
+      for (final match in matches) {
+        var src = match.group(1);
+        if (src == null) continue;
+
+        if (!src.startsWith('http')) {
+          if (src.startsWith('data:')) {
+            continue;
+          }
+          try {
+            final base = Uri.parse(baseUrl);
+            src = base.resolve(src).toString();
+          } on Object catch (_) {
+            continue;
+          }
+        }
+
+        if (_isValidImageUrl(src)) {
+          return src;
+        }
+      }
+    }
+    return null;
+  }
+
+  /// Checks if the URL has a valid image extension.
+  bool _isValidImageUrl(String url) {
+    final uri = Uri.tryParse(url);
+    if (uri == null) return false;
+
+    final path = uri.path.toLowerCase();
+    return path.endsWith('.jpg') ||
+        path.endsWith('.jpeg') ||
+        path.endsWith('.png') ||
+        path.endsWith('.gif') ||
+        path.endsWith('.webp') ||
+        path.endsWith('.ico') ||
+        path.endsWith('.bmp');
   }
 
   void dispose() {

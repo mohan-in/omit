@@ -24,8 +24,15 @@ class ArticleRepository {
   }
 
   /// Fetch article content using ReaderService.
-  Future<(String?, String?, String?)> fetchArticleContent(String url) async {
+  Future<(String?, String?, String?, String?)> fetchArticleContent(
+    String url,
+  ) async {
     return _readerService.parseArticle(url);
+  }
+
+  /// Update an article (e.g. with new content or image).
+  Future<void> updateArticle(Article article) async {
+    await _storageService.saveArticle(article);
   }
 
   /// Mark an article as read.

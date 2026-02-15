@@ -1,10 +1,11 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+
 import 'package:omit/models/models.dart';
 import 'package:omit/notifiers/notifiers.dart';
 import 'package:omit/screens/article_detail_screen.dart';
+import 'package:omit/utils/utils.dart';
 import 'package:omit/widgets/cached_image.dart';
 import 'package:omit/widgets/error_listener.dart';
 import 'package:provider/provider.dart';
@@ -78,6 +79,7 @@ class _ArticleListScreenState extends State<ArticleListScreen> {
                   final article = articleNotifier.articles[index];
                   return _ArticleTile(
                     article: article,
+                    feed: widget.feed,
                     onTap: () => _openArticle(context, article),
                   );
                 },
@@ -152,128 +154,159 @@ class _ArticleListScreenState extends State<ArticleListScreen> {
 }
 
 class _ArticleTile extends StatelessWidget {
-  const _ArticleTile({required this.article, required this.onTap});
+  const _ArticleTile({
+    required this.article,
+    required this.feed,
+    required this.onTap,
+  });
 
   final Article article;
+  final Feed feed;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final dateFormat = DateFormat('MMM d, yyyy');
-    final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      elevation: 2,
+      clipBehavior: Clip.antiAlias,
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
         child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Row(
+          padding: const EdgeInsets.all(16),
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Article image thumbnail
-              if (article.imageUrl != null) ...[
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: CachedImage(
-                    imageUrl: article.imageUrl!,
-                    width: 80,
-                    height: 80,
-                    fit: BoxFit.cover,
-                  ),
-                ),
-                const SizedBox(width: 12),
+              _buildHeader(context),
+              const SizedBox(height: 8),
+              _buildTitle(context),
+              if (article.description != null &&
+                  article.description!.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                _buildContent(context),
               ],
-
-              // Article details
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Title
-                    Text(
-                      article.title,
-                      style: textTheme.titleMedium?.copyWith(
-                        fontSize: 15,
-                        fontWeight: article.isRead
-                            ? FontWeight.normal
-                            : FontWeight.w600,
-                        color: article.isRead
-                            ? colorScheme.onSurface.withValues(alpha: 0.6)
-                            : colorScheme.onSurface,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-
-                    const SizedBox(height: 4),
-
-                    // Description
-                    if (article.description != null)
-                      Text(
-                        article.description!,
-                        style: textTheme.bodySmall?.copyWith(
-                          fontSize: 13,
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-
-                    const SizedBox(height: 8),
-
-                    // Metadata row
-                    Row(
-                      children: [
-                        // Date
-                        if (article.pubDate != null) ...[
-                          Icon(
-                            Icons.access_time,
-                            size: 14,
-                            color: colorScheme.outline,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            dateFormat.format(article.pubDate!),
-                            style: textTheme.bodySmall?.copyWith(
-                              fontSize: 12,
-                              color: colorScheme.outline,
-                            ),
-                          ),
-                        ],
-
-                        const Spacer(),
-
-                        // Bookmark indicator
-                        if (article.isBookmarked)
-                          Icon(
-                            Icons.bookmark,
-                            size: 18,
-                            color: colorScheme.primary,
-                          ),
-
-                        // Unread indicator
-                        if (!article.isRead)
-                          Container(
-                            width: 8,
-                            height: 8,
-                            margin: const EdgeInsets.only(left: 8),
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: colorScheme.primary,
-                            ),
-                          ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
+              if (article.imageUrl != null) ...[
+                const SizedBox(height: 12),
+                _buildMedia(context),
+              ],
+              const SizedBox(height: 12),
+              _buildFooter(context),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildHeader(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Row(
+      children: [
+        if (feed.iconUrl != null) ...[
+          Container(
+            width: 20,
+            height: 20,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              image: DecorationImage(
+                image: NetworkImage(feed.iconUrl!),
+                fit: BoxFit.cover,
+                onError: (exception, stackTrace) {},
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+        ] else ...[
+          Icon(Icons.rss_feed, size: 16, color: colorScheme.primary),
+          const SizedBox(width: 8),
+        ],
+        Flexible(
+          child: Text(
+            feed.title,
+            style: theme.textTheme.labelMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: colorScheme.primary,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        if (article.author != null && article.author!.isNotEmpty) ...[
+          Text(
+            ' • ${article.author}',
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildTitle(BuildContext context) {
+    final theme = Theme.of(context);
+    return Text(
+      HtmlUtils.unescape(article.title),
+      style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+    );
+  }
+
+  Widget _buildContent(BuildContext context) {
+    final theme = Theme.of(context);
+    // Be careful with description length
+    return Text(
+      HtmlUtils.unescape(article.description!),
+      style: theme.textTheme.bodyMedium,
+      maxLines: 3,
+      overflow: TextOverflow.ellipsis,
+    );
+  }
+
+  Widget _buildMedia(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(12),
+      child: CachedImage(
+        imageUrl: article.imageUrl!,
+        width: double.infinity,
+        height: 200,
+        fit: BoxFit.cover,
+      ),
+    );
+  }
+
+  Widget _buildFooter(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Row(
+      children: [
+        if (article.pubDate != null)
+          Text(
+            DateUtilsHelper.formatTimeAgo(article.pubDate!),
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: colorScheme.outline,
+            ),
+          ),
+        const Spacer(),
+        if (article.isBookmarked)
+          Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: Icon(Icons.bookmark, size: 20, color: colorScheme.primary),
+          ),
+        if (!article.isRead)
+          Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: colorScheme.primary,
+            ),
+          ),
+      ],
     );
   }
 }

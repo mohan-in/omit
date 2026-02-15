@@ -1,3 +1,5 @@
+import 'dart:developer' as developer;
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
@@ -30,6 +32,7 @@ class CachedImage extends StatelessWidget {
         );
       },
       errorWidget: (context, url, error) {
+        developer.log('Failed to load image: $url, error: $error');
         return Container(
           width: width,
           height: height,
