@@ -6,6 +6,7 @@ import 'package:omit/models/models.dart';
 import 'package:omit/notifiers/notifiers.dart';
 import 'package:omit/screens/article_detail_screen.dart';
 import 'package:omit/widgets/cached_image.dart';
+import 'package:omit/widgets/error_listener.dart';
 import 'package:provider/provider.dart';
 
 /// Screen displaying articles from a specific feed.
@@ -57,31 +58,33 @@ class _ArticleListScreenState extends State<ArticleListScreen> {
           ),
         ],
       ),
-      body: Consumer<ArticleNotifier>(
-        builder: (context, articleNotifier, child) {
-          if (articleNotifier.isLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
+      body: ErrorListener<ArticleNotifier>(
+        child: Consumer<ArticleNotifier>(
+          builder: (context, articleNotifier, child) {
+            if (articleNotifier.isLoading) {
+              return const Center(child: CircularProgressIndicator());
+            }
 
-          if (articleNotifier.articles.isEmpty) {
-            return _buildEmptyState();
-          }
+            if (articleNotifier.articles.isEmpty) {
+              return _buildEmptyState();
+            }
 
-          return RefreshIndicator(
-            onRefresh: _refreshFeed,
-            child: ListView.builder(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              itemCount: articleNotifier.articles.length,
-              itemBuilder: (context, index) {
-                final article = articleNotifier.articles[index];
-                return _ArticleTile(
-                  article: article,
-                  onTap: () => _openArticle(context, article),
-                );
-              },
-            ),
-          );
-        },
+            return RefreshIndicator(
+              onRefresh: _refreshFeed,
+              child: ListView.builder(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                itemCount: articleNotifier.articles.length,
+                itemBuilder: (context, index) {
+                  final article = articleNotifier.articles[index];
+                  return _ArticleTile(
+                    article: article,
+                    onTap: () => _openArticle(context, article),
+                  );
+                },
+              ),
+            );
+          },
+        ),
       ),
     );
   }

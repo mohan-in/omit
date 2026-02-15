@@ -1,11 +1,12 @@
 import 'package:flutter/widgets.dart';
 
 import 'package:omit/models/models.dart';
+import 'package:omit/notifiers/error_notifier_mixin.dart';
 import 'package:omit/repositories/repositories.dart';
 
 /// Notifier for managing article UI state.
 /// Uses ArticleRepository for data operations.
-class ArticleNotifier extends ChangeNotifier {
+class ArticleNotifier extends ChangeNotifier with ErrorNotifierMixin {
   ArticleNotifier({required ArticleRepository repository})
     : _repository = repository;
 
@@ -116,25 +117,33 @@ class ArticleNotifier extends ChangeNotifier {
 
   /// Mark an article as read.
   Future<void> markAsRead(String articleId) async {
-    await _repository.markAsRead(articleId);
+    try {
+      await _repository.markAsRead(articleId);
 
-    final index = _articles.indexWhere((a) => a.id == articleId);
-    if (index != -1) {
-      _articles[index] = _articles[index].copyWith(isRead: true);
-      notifyListeners();
+      final index = _articles.indexWhere((a) => a.id == articleId);
+      if (index != -1) {
+        _articles[index] = _articles[index].copyWith(isRead: true);
+        notifyListeners();
+      }
+    } on Object catch (e) {
+      setError('Failed to mark as read: $e');
     }
   }
 
   /// Toggle bookmark status for an article.
   Future<void> toggleBookmark(String articleId) async {
-    await _repository.toggleBookmark(articleId);
+    try {
+      await _repository.toggleBookmark(articleId);
 
-    final index = _articles.indexWhere((a) => a.id == articleId);
-    if (index != -1) {
-      _articles[index] = _articles[index].copyWith(
-        isBookmarked: !_articles[index].isBookmarked,
-      );
-      notifyListeners();
+      final index = _articles.indexWhere((a) => a.id == articleId);
+      if (index != -1) {
+        _articles[index] = _articles[index].copyWith(
+          isBookmarked: !_articles[index].isBookmarked,
+        );
+        notifyListeners();
+      }
+    } on Object catch (e) {
+      setError('Failed to toggle bookmark: $e');
     }
   }
 
@@ -165,8 +174,12 @@ class ArticleNotifier extends ChangeNotifier {
     String feedId, {
     required bool isEnabled,
   }) async {
-    await _repository.setFeedReaderMode(feedId, isEnabled: isEnabled);
-    notifyListeners();
+    try {
+      await _repository.setFeedReaderMode(feedId, isEnabled: isEnabled);
+      notifyListeners();
+    } on Object catch (e) {
+      setError('Failed to set reader mode: $e');
+    }
   }
 
   // Reader Mode Settings

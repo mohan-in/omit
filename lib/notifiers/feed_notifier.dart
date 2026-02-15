@@ -1,28 +1,27 @@
 import 'package:flutter/foundation.dart';
 
 import 'package:omit/models/models.dart';
+import 'package:omit/notifiers/error_notifier_mixin.dart';
 import 'package:omit/repositories/repositories.dart';
 
 /// Notifier for managing feed UI state.
 /// Uses FeedRepository for data operations.
-class FeedNotifier extends ChangeNotifier {
+class FeedNotifier extends ChangeNotifier with ErrorNotifierMixin {
   FeedNotifier({required FeedRepository repository}) : _repository = repository;
 
   final FeedRepository _repository;
 
   List<Feed> _feeds = [];
   bool _isLoading = false;
-  String? _error;
 
   // Getters
   List<Feed> get feeds => List.unmodifiable(_feeds);
   bool get isLoading => _isLoading;
-  String? get error => _error;
 
   /// Load all feeds from local storage.
   Future<void> loadFeeds() async {
     _isLoading = true;
-    _error = null;
+    clearError();
     notifyListeners();
 
     try {
@@ -30,7 +29,7 @@ class FeedNotifier extends ChangeNotifier {
       // Sort feeds by order
       _feeds.sort((a, b) => a.order.compareTo(b.order));
     } on Object catch (e) {
-      _error = 'Failed to load feeds: $e';
+      setError('Failed to load feeds: $e');
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -40,7 +39,7 @@ class FeedNotifier extends ChangeNotifier {
   /// Add a new feed by URL.
   Future<Feed> addFeed(String url) async {
     _isLoading = true;
-    _error = null;
+    clearError();
     notifyListeners();
 
     try {
@@ -54,7 +53,7 @@ class FeedNotifier extends ChangeNotifier {
       notifyListeners();
       return feed;
     } on Object catch (e) {
-      _error = 'Failed to add feed: $e';
+      setError('Failed to add feed: $e');
       notifyListeners();
       rethrow;
     } finally {
@@ -75,9 +74,7 @@ class FeedNotifier extends ChangeNotifier {
         }
       }
     } on Object catch (e) {
-      _error = 'Failed to refresh feed: $e';
-      notifyListeners();
-      notifyListeners();
+      setError('Failed to refresh feed: $e');
     }
   }
 
@@ -94,8 +91,7 @@ class FeedNotifier extends ChangeNotifier {
         await _repository.updateFeed(updatedFeed);
       }
     } on Object catch (e) {
-      _error = 'Failed to rename feed: $e';
-      notifyListeners();
+      setError('Failed to rename feed: $e');
       // Revert if needed, but for now we just show error
     }
   }
@@ -103,7 +99,7 @@ class FeedNotifier extends ChangeNotifier {
   /// Refresh all feeds.
   Future<void> refreshAllFeeds() async {
     _isLoading = true;
-    _error = null;
+    clearError();
     notifyListeners();
 
     try {
@@ -111,7 +107,7 @@ class FeedNotifier extends ChangeNotifier {
         await refreshFeed(feed.id);
       }
     } on Object catch (e) {
-      _error = 'Failed to refresh feeds: $e';
+      setError('Failed to refresh feeds: $e');
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -125,8 +121,7 @@ class FeedNotifier extends ChangeNotifier {
       _feeds.removeWhere((f) => f.id == feedId);
       notifyListeners();
     } on Object catch (e) {
-      _error = 'Failed to delete feed: $e';
-      notifyListeners();
+      setError('Failed to delete feed: $e');
     }
   }
 

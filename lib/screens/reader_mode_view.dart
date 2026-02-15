@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:omit/models/models.dart';
 import 'package:omit/notifiers/notifiers.dart';
 import 'package:omit/widgets/cached_image.dart';
+import 'package:omit/widgets/error_listener.dart';
 import 'package:omit/widgets/reader_theme_sheet.dart';
 import 'package:provider/provider.dart';
 
@@ -56,38 +57,43 @@ class _ReaderModeViewState extends State<ReaderModeView> {
       (n) => n.readerSettings,
     );
 
-    return Scaffold(
-      backgroundColor: settings.backgroundColor,
-      body: CustomScrollView(
-        slivers: [
-          _buildAppBar(article, settings),
-          SliverToBoxAdapter(
-            child: Builder(
-              builder: (context) {
-                final isLoading = context.select<ArticleNotifier, bool>(
-                  (n) => n.isArticleLoading(article.id),
-                );
-                if (!isLoading) return const SizedBox.shrink();
-                return const LinearProgressIndicator(minHeight: 2);
-              },
-            ),
-          ),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildHeader(article, settings),
-                  if (article.content == null)
-                    _buildLoadingOrError(article.id)
-                  else
-                    _buildContent(article),
-                ],
+    return ErrorListener<ArticleNotifier>(
+      child: Scaffold(
+        backgroundColor: settings.backgroundColor,
+        body: CustomScrollView(
+          slivers: [
+            _buildAppBar(article, settings),
+            SliverToBoxAdapter(
+              child: Builder(
+                builder: (context) {
+                  final isLoading = context.select<ArticleNotifier, bool>(
+                    (n) => n.isArticleLoading(article.id),
+                  );
+                  if (!isLoading) return const SizedBox.shrink();
+                  return const LinearProgressIndicator(minHeight: 2);
+                },
               ),
             ),
-          ),
-        ],
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 24,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildHeader(article, settings),
+                    if (article.content == null)
+                      _buildLoadingOrError(article.id)
+                    else
+                      _buildContent(article),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -9,6 +9,7 @@ import 'package:omit/models/models.dart';
 import 'package:omit/notifiers/notifiers.dart';
 import 'package:omit/screens/article_list_screen.dart';
 import 'package:omit/screens/bookmarks_screen.dart';
+import 'package:omit/widgets/error_listener.dart';
 import 'package:omit/widgets/widgets.dart';
 import 'package:provider/provider.dart';
 
@@ -53,31 +54,33 @@ class _FeedsScreenState extends State<FeedsScreen> {
           unawaited(_exportFeeds(context));
         },
       ),
-      body: Consumer<FeedNotifier>(
-        builder: (context, feedNotifier, child) {
-          if (feedNotifier.isLoading && feedNotifier.feeds.isEmpty) {
-            return const Center(child: CircularProgressIndicator());
-          }
+      body: ErrorListener<FeedNotifier>(
+        child: Consumer<FeedNotifier>(
+          builder: (context, feedNotifier, child) {
+            if (feedNotifier.isLoading && feedNotifier.feeds.isEmpty) {
+              return const Center(child: CircularProgressIndicator());
+            }
 
-          if (feedNotifier.feeds.isEmpty) {
-            return _buildEmptyState(context);
-          }
+            if (feedNotifier.feeds.isEmpty) {
+              return _buildEmptyState(context);
+            }
 
-          return RefreshIndicator(
-            onRefresh: feedNotifier.refreshAllFeeds,
-            child: ReorderableListView.builder(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              itemCount: feedNotifier.feeds.length,
-              onReorder: (oldIndex, newIndex) {
-                unawaited(feedNotifier.reorderFeeds(oldIndex, newIndex));
-              },
-              itemBuilder: (context, index) {
-                final feed = feedNotifier.feeds[index];
-                return _FeedTile(key: ValueKey(feed.id), feed: feed);
-              },
-            ),
-          );
-        },
+            return RefreshIndicator(
+              onRefresh: feedNotifier.refreshAllFeeds,
+              child: ReorderableListView.builder(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                itemCount: feedNotifier.feeds.length,
+                onReorder: (oldIndex, newIndex) {
+                  unawaited(feedNotifier.reorderFeeds(oldIndex, newIndex));
+                },
+                itemBuilder: (context, index) {
+                  final feed = feedNotifier.feeds[index];
+                  return _FeedTile(key: ValueKey(feed.id), feed: feed);
+                },
+              ),
+            );
+          },
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showAddFeedDialog(context),
