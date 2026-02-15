@@ -24,6 +24,7 @@ void main() async {
 
   final rssService = RssService(adBlockService: adBlockService);
   final readerService = ReaderService();
+  final importExportService = ImportExportService();
 
   // Create repositories
   final feedRepository = FeedRepository(
@@ -46,6 +47,7 @@ void main() async {
         ChangeNotifierProvider.value(value: feedNotifier),
         ChangeNotifierProvider.value(value: articleNotifier),
         Provider.value(value: storageService),
+        Provider.value(value: importExportService),
       ],
       child: const OmitApp(),
     ),

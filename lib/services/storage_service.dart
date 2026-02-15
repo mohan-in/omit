@@ -9,7 +9,7 @@ class StorageService {
 
   Box<Feed>? _feedsBox;
   Box<Article>? _articlesBox;
-  Box<dynamic>? _settingsBox;
+  Box<bool>? _settingsBox;
 
   bool _isInitialized = false;
 
@@ -30,7 +30,7 @@ class StorageService {
     // Open boxes
     _feedsBox = await Hive.openBox<Feed>(_feedsBoxName);
     _articlesBox = await Hive.openBox<Article>(_articlesBoxName);
-    _settingsBox = await Hive.openBox<dynamic>(_settingsBoxName);
+    _settingsBox = await Hive.openBox<bool>(_settingsBoxName);
 
     _isInitialized = true;
   }
@@ -152,11 +152,9 @@ class StorageService {
   bool getFeedReaderMode(String feedId) {
     _ensureInitialized();
     return _settingsBox!.get(
-              'reader_mode_$feedId',
-              defaultValue: false,
-            )
-            as bool? ??
-        false;
+      'reader_mode_$feedId',
+      defaultValue: false,
+    )!;
   }
 
   /// Set reader mode preference for a feed.

@@ -1,14 +1,11 @@
 import 'dart:async';
-import 'dart:convert';
-import 'dart:io';
-import 'dart:typed_data';
 
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:omit/models/models.dart';
 import 'package:omit/notifiers/notifiers.dart';
 import 'package:omit/screens/article_list_screen.dart';
 import 'package:omit/screens/bookmarks_screen.dart';
+import 'package:omit/services/services.dart';
 import 'package:omit/widgets/error_listener.dart';
 import 'package:omit/widgets/widgets.dart';
 import 'package:provider/provider.dart';
@@ -93,39 +90,23 @@ class _FeedsScreenState extends State<FeedsScreen> {
   Future<void> _exportFeeds(BuildContext context) async {
     final feeds = context.read<FeedNotifier>().feeds;
     if (feeds.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('No feeds to export')));
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('No feeds to export')));
+      }
       return;
     }
 
     try {
-      final content = feeds.map((e) => e.url).join('\n');
+      final path = await context.read<ImportExportService>().exportFeeds(feeds);
 
-      final bytes = utf8.encode(content);
-
-      final path = await FilePicker.platform.saveFile(
-        dialogTitle: 'Export Feeds',
-        fileName: 'feeds_export.txt',
-        type: FileType.custom,
-        allowedExtensions: ['txt'],
-        bytes: Uint8List.fromList(bytes),
-      );
-
-      // On desktop, saveFile returns a path but doesn't write the file.
-      // On mobile, saveFile writes the file using the bytes parameter.
-      if (path != null) {
-        if (!Platform.isAndroid && !Platform.isIOS) {
-          await File(path).writeAsString(content);
-        }
-
-        if (context.mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(
-            const SnackBar(content: Text('Feeds exported successfully')),
-          );
-        }
+      if (path != null && context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(
+          const SnackBar(content: Text('Feeds exported successfully')),
+        );
       }
     } on Object catch (e) {
       if (context.mounted) {
@@ -138,23 +119,12 @@ class _FeedsScreenState extends State<FeedsScreen> {
 
   Future<void> _importFeeds(BuildContext context) async {
     try {
-      final result = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: ['txt', 'opml', 'xml'],
-      );
+      final urls = await context
+          .read<ImportExportService>()
+          .pickAndParseFeedFile();
 
-      if (result != null && result.files.single.path != null) {
-        final file = File(result.files.single.path!);
-        final content = await file.readAsString();
-        final urls = content
-            .split('\n')
-            .map((e) => e.trim())
-            .where((e) => e.isNotEmpty)
-            .toList();
-
-        if (context.mounted) {
-          await _processImportedUrls(context, urls);
-        }
+      if (urls.isNotEmpty && context.mounted) {
+        await _processImportedUrls(context, urls);
       }
     } on Object catch (e) {
       if (context.mounted) {

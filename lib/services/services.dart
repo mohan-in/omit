@@ -2,6 +2,7 @@
 library;
 
 export 'ad_block_service.dart';
+export 'import_export_service.dart';
 export 'reader_service.dart';
 export 'rss_service.dart';
 export 'storage_service.dart';
