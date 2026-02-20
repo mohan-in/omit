@@ -6,12 +6,9 @@ import 'package:omit/services/services.dart';
 class ArticleRepository {
   ArticleRepository({
     required StorageService storageService,
-    required ReaderService readerService,
-  }) : _storageService = storageService,
-       _readerService = readerService;
+  }) : _storageService = storageService;
 
   final StorageService _storageService;
-  final ReaderService _readerService;
 
   /// Get articles for a specific feed.
   List<Article> getArticlesForFeed(String feedId) {
@@ -21,13 +18,6 @@ class ArticleRepository {
   /// Get an article by ID.
   Article? getArticle(String articleId) {
     return _storageService.getArticle(articleId);
-  }
-
-  /// Fetch article content using ReaderService.
-  Future<(String?, String?, String?, String?)> fetchArticleContent(
-    String url,
-  ) async {
-    return _readerService.parseArticle(url);
   }
 
   /// Update an article (e.g. with new content or image).

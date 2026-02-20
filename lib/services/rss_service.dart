@@ -2,9 +2,12 @@ import 'dart:convert';
 import 'dart:developer' as developer;
 import 'dart:io';
 
+import 'dart:typed_data';
+
 import 'package:dart_rss/dart_rss.dart';
 import 'package:html/parser.dart' as html_parser;
 import 'package:http/http.dart' as http;
+import 'package:image/image.dart' as img;
 import 'package:omit/models/models.dart';
 import 'package:omit/services/ad_block_service.dart';
 
@@ -98,7 +101,7 @@ class RssService {
         content: _sanitizeContent(item.content?.value),
         author: _sanitizeText(item.author ?? item.dc?.creator),
         pubDate: _parseDate(item.pubDate),
-        imageUrl: _extractImageUrl(item, url),
+        imageUrl: await _extractImageUrl(item, url),
       );
       articles.add(article);
     }
@@ -161,7 +164,7 @@ class RssService {
             ? _sanitizeText(entry.authors.first.name)
             : null,
         pubDate: _parseDate(entry.updated ?? entry.published),
-        imageUrl: _extractAtomImageUrl(entry, url),
+        imageUrl: await _extractAtomImageUrl(entry, url),
       );
       articles.add(article);
     }
@@ -323,7 +326,7 @@ class RssService {
     throw FormatException('Cannot parse date: $dateStr');
   }
 
-  String? _extractImageUrl(RssItem item, String baseUrl) {
+  Future<String?> _extractImageUrl(RssItem item, String baseUrl) async {
     // Try media:content first - usually high quality
     if (item.media?.contents.isNotEmpty ?? false) {
       // Find best quality image (largest width)
@@ -344,7 +347,8 @@ class RssService {
         }
       }
 
-      if (bestMedia.url != null) {
+      if (bestMedia.url != null &&
+          await _isValidImageDimensions(bestMedia.url!)) {
         developer.log(
           'Extracted high-quality image from media:content: ${bestMedia.url}',
         );
@@ -355,14 +359,17 @@ class RssService {
     // Try enclosure
     if (item.enclosure?.url != null &&
         (item.enclosure!.type?.startsWith('image/') ?? false) &&
-        _isValidImageUrl(item.enclosure!.url!)) {
+        _isValidImageUrl(item.enclosure!.url!) &&
+        await _isValidImageDimensions(item.enclosure!.url!)) {
       return item.enclosure!.url;
     }
 
     // Try media:thumbnail
     if (item.media?.thumbnails.isNotEmpty ?? false) {
       final thumb = item.media!.thumbnails.first.url;
-      if (thumb != null && _isValidImageUrl(thumb)) {
+      if (thumb != null &&
+          _isValidImageUrl(thumb) &&
+          await _isValidImageDimensions(thumb)) {
         return thumb;
       }
     }
@@ -374,12 +381,12 @@ class RssService {
     );
   }
 
-  String? _extractAtomImageUrl(AtomItem entry, String baseUrl) {
+  Future<String?> _extractAtomImageUrl(AtomItem entry, String baseUrl) async {
     // Try to extract from content
     return _extractImageFromHtml(entry.content, baseUrl);
   }
 
-  String? _extractImageFromHtml(String? html, String baseUrl) {
+  Future<String?> _extractImageFromHtml(String? html, String baseUrl) async {
     if (html == null) return null;
 
     try {
@@ -468,7 +475,12 @@ class RssService {
       if (candidates.isNotEmpty) {
         final sorted = candidates.entries.toList()
           ..sort((a, b) => b.value.compareTo(a.value));
-        return sorted.first.key;
+
+        for (final entry in sorted) {
+          if (await _isValidImageDimensions(entry.key)) {
+            return entry.key;
+          }
+        }
       }
     } on Exception catch (_) {
       // Fallback to simple regex if HTML parsing fails
@@ -492,12 +504,63 @@ class RssService {
           }
         }
 
-        if (_isValidImageUrl(src)) {
+        if (_isValidImageUrl(src) && await _isValidImageDimensions(src)) {
           return src;
         }
       }
     }
     return null;
+  }
+
+  /// Checks if the image is at least minWidth x minHeight.
+  /// If it cannot be determined, defaults to true to avoid
+  /// filtering valid images without metadata.
+  Future<bool> _isValidImageDimensions(
+    String url, {
+    int minWidth = 200,
+    int minHeight = 400,
+  }) async {
+    try {
+      final request = await HttpClient().getUrl(Uri.parse(url));
+      final response = await request.close();
+
+      if (response.statusCode != HttpStatus.ok) return false;
+
+      // Extract metadata only, don't decode the entire image pixels
+      final headerBytes = <int>[];
+      await for (final chunk in response) {
+        headerBytes.addAll(chunk);
+
+        // Break early once we have enough bytes for headers
+        // (usually ~10KB is plenty)
+        if (headerBytes.length > 32768) {
+          break;
+        }
+      }
+
+      final uint8Bytes = Uint8List.fromList(headerBytes);
+      final decoder = img.findDecoderForData(uint8Bytes);
+      if (decoder == null) return false;
+
+      final info = decoder.startDecode(uint8Bytes);
+      if (info != null) {
+        if (info.width < minWidth || info.height < minHeight) {
+          developer.log(
+            'Filtered out small image ($url): '
+            '${info.width}x${info.height} < ${minWidth}x$minHeight',
+          );
+          return false;
+        }
+        return true;
+      }
+
+      // Fallback if decoder finds no info
+      return true;
+    } on Exception catch (e) {
+      developer.log('Error determining image dimensions for $url: $e');
+      // If we fail to fetch/decode the header, assume it's valid so we don't break perfectly fine images.
+      return true;
+    }
   }
 
   /// Checks if the URL has a valid image extension.

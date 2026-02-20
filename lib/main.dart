@@ -23,7 +23,6 @@ void main() async {
   );
 
   final rssService = RssService(adBlockService: adBlockService);
-  final readerService = ReaderService();
   final importExportService = ImportExportService();
 
   // Create repositories
@@ -33,7 +32,6 @@ void main() async {
   );
   final articleRepository = ArticleRepository(
     storageService: storageService,
-    readerService: readerService,
   );
 
   // Create notifiers
@@ -62,7 +60,6 @@ class OmitApp extends StatelessWidget {
     return MaterialApp(
       title: 'Omit',
       theme: AppTheme.lightTheme,
-      debugShowCheckedModeBanner: false,
       home: const FeedsScreen(),
     );
   }

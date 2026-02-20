@@ -185,10 +185,7 @@ class _ArticleTile extends StatelessWidget {
                 const SizedBox(height: 4),
                 _buildContent(context),
               ],
-              if (article.imageUrl != null) ...[
-                const SizedBox(height: 12),
-                _buildMedia(context),
-              ],
+              if (article.imageUrl != null) _buildMedia(context),
               const SizedBox(height: 12),
               _buildFooter(context),
             ],
@@ -267,14 +264,20 @@ class _ArticleTile extends StatelessWidget {
   }
 
   Widget _buildMedia(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(12),
-      child: CachedImage(
-        imageUrl: article.imageUrl!,
-        width: double.infinity,
-        height: 200,
-        fit: BoxFit.cover,
-      ),
+    return FilteredImage(
+      imageUrl: article.imageUrl!,
+      width: double.infinity,
+      height: 200,
+      fit: BoxFit.cover,
+      wrapperBuilder: (context, child) {
+        return Padding(
+          padding: const EdgeInsets.only(top: 12),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: child,
+          ),
+        );
+      },
     );
   }
 
