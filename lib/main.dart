@@ -1,4 +1,5 @@
 import 'package:adblocker_webview/adblocker_webview.dart';
+import 'package:dex_compat/dex_compat.dart';
 import 'package:flutter/material.dart';
 import 'package:omit/notifiers/notifiers.dart';
 import 'package:omit/repositories/repositories.dart';
@@ -33,6 +34,9 @@ void main() async {
   );
   final importExportService = ImportExportService();
 
+  // Detect Samsung DeX / desktop windowing
+  final isDesktopMode = await DexCompat.isDesktopMode();
+
   // Create repositories
   final feedRepository = FeedRepository(
     rssService: rssService,
@@ -60,13 +64,15 @@ void main() async {
         Provider.value(value: storageService),
         Provider.value(value: importExportService),
       ],
-      child: const OmitApp(),
+      child: OmitApp(isDesktopMode: isDesktopMode),
     ),
   );
 }
 
 class OmitApp extends StatelessWidget {
-  const OmitApp({super.key});
+  const OmitApp({required this.isDesktopMode, super.key});
+
+  final bool isDesktopMode;
 
   @override
   Widget build(BuildContext context) {
@@ -74,6 +80,7 @@ class OmitApp extends StatelessWidget {
       title: 'Omit',
       theme: AppTheme.lightTheme,
       home: const FeedsScreen(),
+      builder: DexCompat.builder(isDesktopMode),
     );
   }
 }

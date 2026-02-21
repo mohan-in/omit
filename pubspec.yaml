@@ -12,6 +12,8 @@ dependencies:
   cached_network_image: ^3.4.1
   cupertino_icons: ^1.0.8
   dart_rss: ^3.0.3
+  dex_compat:
+    path: ../../packages/dex_compat
   file_picker: ^10.3.10
 
   flutter:
