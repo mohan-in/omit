@@ -17,6 +17,9 @@ class Feed extends HiveObject {
   });
 
   /// Creates a Feed from RSS feed metadata.
+  ///
+  /// Uses a deterministic URL-based hash for the ID to avoid
+  /// timestamp-based collisions.
   factory Feed.fromRss({
     required String url,
     required String title,
@@ -24,7 +27,7 @@ class Feed extends HiveObject {
     String? iconUrl,
   }) {
     return Feed(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      id: generateId(url),
       title: title,
       url: url,
       description: description,
@@ -33,29 +36,34 @@ class Feed extends HiveObject {
     );
   }
 
+  /// Generates a deterministic ID from a feed URL.
+  static String generateId(String url) {
+    return 'feed_${url.hashCode.toUnsigned(32).toRadixString(16)}';
+  }
+
   @HiveField(0)
   final String id;
 
   @HiveField(1)
-  String title;
+  final String title;
 
   @HiveField(2)
   final String url;
 
   @HiveField(3)
-  String? description;
+  final String? description;
 
   @HiveField(4)
-  String? iconUrl;
+  final String? iconUrl;
 
   @HiveField(5)
-  DateTime? lastUpdated;
+  final DateTime? lastUpdated;
 
   @HiveField(6)
-  int unreadCount;
+  final int unreadCount;
 
   @HiveField(7)
-  int order;
+  final int order;
 
   Feed copyWith({
     String? id,

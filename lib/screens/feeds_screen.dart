@@ -357,44 +357,10 @@ class _FeedTile extends StatelessWidget {
   }
 
   void _showRenameDialog(BuildContext context) {
-    final controller = TextEditingController(text: feed.title);
-
     unawaited(
       showDialog<void>(
         context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Rename Feed'),
-          content: TextField(
-            controller: controller,
-            decoration: const InputDecoration(
-              labelText: 'Feed Title',
-              border: OutlineInputBorder(),
-            ),
-            autofocus: true,
-            textCapitalization: TextCapitalization.sentences,
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () {
-                final newTitle = controller.text.trim();
-                if (newTitle.isNotEmpty) {
-                  unawaited(
-                    context.read<FeedNotifier>().renameFeed(
-                      feed.id,
-                      newTitle,
-                    ),
-                  );
-                }
-                Navigator.pop(context);
-              },
-              child: const Text('Save'),
-            ),
-          ],
-        ),
+        builder: (context) => _RenameDialog(feed: feed),
       ),
     );
   }
@@ -423,6 +389,69 @@ class _FeedTile extends StatelessWidget {
         color: colorScheme.onSecondaryContainer,
         size: 24,
       ),
+    );
+  }
+}
+
+/// Extracted as a StatefulWidget to properly dispose the TextEditingController.
+class _RenameDialog extends StatefulWidget {
+  const _RenameDialog({required this.feed});
+
+  final Feed feed;
+
+  @override
+  State<_RenameDialog> createState() => _RenameDialogState();
+}
+
+class _RenameDialogState extends State<_RenameDialog> {
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.feed.title);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Rename Feed'),
+      content: TextField(
+        controller: _controller,
+        decoration: const InputDecoration(
+          labelText: 'Feed Title',
+          border: OutlineInputBorder(),
+        ),
+        autofocus: true,
+        textCapitalization: TextCapitalization.sentences,
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        TextButton(
+          onPressed: () {
+            final newTitle = _controller.text.trim();
+            if (newTitle.isNotEmpty) {
+              unawaited(
+                context.read<FeedNotifier>().renameFeed(
+                  widget.feed.id,
+                  newTitle,
+                ),
+              );
+            }
+            Navigator.pop(context);
+          },
+          child: const Text('Save'),
+        ),
+      ],
     );
   }
 }

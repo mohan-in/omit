@@ -22,7 +22,15 @@ void main() async {
     FilterConfig(filterTypes: [FilterType.easyList, FilterType.adGuard]),
   );
 
-  final rssService = RssService(adBlockService: adBlockService);
+  final contentSanitizer = ContentSanitizer(adBlockService: adBlockService);
+  final imageExtractor = ImageExtractor();
+  final iconResolver = IconResolver();
+
+  final rssService = RssService(
+    contentSanitizer: contentSanitizer,
+    imageExtractor: imageExtractor,
+    iconResolver: iconResolver,
+  );
   final importExportService = ImportExportService();
 
   // Create repositories
@@ -37,6 +45,10 @@ void main() async {
   // Create notifiers
   final feedNotifier = FeedNotifier(repository: feedRepository);
   final articleNotifier = ArticleNotifier(repository: articleRepository);
+  final readerSettingsNotifier = ReaderSettingsNotifier(
+    storageService: storageService,
+  )..loadSettings();
+
   await feedNotifier.loadFeeds();
 
   runApp(
@@ -44,6 +56,7 @@ void main() async {
       providers: [
         ChangeNotifierProvider.value(value: feedNotifier),
         ChangeNotifierProvider.value(value: articleNotifier),
+        ChangeNotifierProvider.value(value: readerSettingsNotifier),
         Provider.value(value: storageService),
         Provider.value(value: importExportService),
       ],

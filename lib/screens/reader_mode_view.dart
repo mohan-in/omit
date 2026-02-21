@@ -32,7 +32,7 @@ class _ReaderModeViewState extends State<ReaderModeView> {
     super.didChangeDependencies();
 
     // Listen for settings changes to dynamically format the WebView
-    final currentSettings = context.watch<ArticleNotifier>().readerSettings;
+    final currentSettings = context.watch<ReaderSettingsNotifier>().settings;
 
     if (_lastSettings != null &&
         _lastSettings != currentSettings &&
@@ -87,14 +87,14 @@ class _ReaderModeViewState extends State<ReaderModeView> {
     );
 
     // Clear cache and cookies to bypass soft paywalls
-    // (e.g., "1 free article left")
     unawaited(_controller.clearCache());
     unawaited(WebViewCookieManager().clearCookies());
 
-    // Spoof a standard desktop User-Agent to prevent strict anti-bot detection
+    // Spoof a standard desktop User-Agent
     unawaited(
       _controller.setUserAgent(
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
+        '(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
       ),
     );
 
@@ -104,7 +104,7 @@ class _ReaderModeViewState extends State<ReaderModeView> {
   Future<void> _onPageFinished(String url) async {
     if (!mounted) return;
 
-    final settings = context.read<ArticleNotifier>().readerSettings;
+    final settings = context.read<ReaderSettingsNotifier>().settings;
     final primaryColorHtml = _colorToHex(Theme.of(context).colorScheme.primary);
     final bgColor = _colorToHex(settings.backgroundColor);
     final textColor = _colorToHex(settings.textColor);
@@ -174,8 +174,8 @@ class _ReaderModeViewState extends State<ReaderModeView> {
 
   @override
   Widget build(BuildContext context) {
-    final settings = context.select<ArticleNotifier, ReaderSettings>(
-      (n) => n.readerSettings,
+    final settings = context.select<ReaderSettingsNotifier, ReaderSettings>(
+      (n) => n.settings,
     );
 
     return Scaffold(

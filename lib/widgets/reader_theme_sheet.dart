@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:omit/models/reader_settings.dart';
-import 'package:omit/notifiers/article_notifier.dart';
+import 'package:omit/notifiers/reader_settings_notifier.dart';
 import 'package:provider/provider.dart';
 
 class ReaderThemeSheet extends StatelessWidget {
@@ -8,8 +8,8 @@ class ReaderThemeSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final notifier = context.watch<ArticleNotifier>();
-    final settings = notifier.readerSettings;
+    final notifier = context.watch<ReaderSettingsNotifier>();
+    final settings = notifier.settings;
     final theme = Theme.of(context);
 
     return Container(
@@ -50,7 +50,7 @@ class ReaderThemeSheet extends StatelessWidget {
             ],
             selected: {settings.font},
             onSelectionChanged: (newSelection) {
-              notifier.updateReaderSettings(font: newSelection.first);
+              notifier.updateSettings(font: newSelection.first);
             },
             showSelectedIcon: false,
             style: const ButtonStyle(
@@ -70,7 +70,7 @@ class ReaderThemeSheet extends StatelessWidget {
                   divisions: 4,
                   label: '${(settings.fontSizeScale * 100).round()}%',
                   onChanged: (value) {
-                    notifier.updateReaderSettings(fontSizeScale: value);
+                    notifier.updateSettings(fontSizeScale: value);
                   },
                 ),
               ),
@@ -78,34 +78,34 @@ class ReaderThemeSheet extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 24),
-          // Theme Selection
+          // Theme Selection — colors sourced from ReaderSettings constants
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               _ThemeOption(
                 label: 'Light',
-                color: const Color(0xFFFFFFFF),
-                textColor: const Color(0xFF333333),
+                color: ReaderSettings.lightBg,
+                textColor: ReaderSettings.lightText,
                 isSelected: settings.theme == ReaderTheme.light,
-                onTap: () => notifier.updateReaderSettings(
+                onTap: () => notifier.updateSettings(
                   theme: ReaderTheme.light,
                 ),
               ),
               _ThemeOption(
                 label: 'Sepia',
-                color: const Color(0xFFF4ECD8),
-                textColor: const Color(0xFF5B4636),
+                color: ReaderSettings.sepiaBg,
+                textColor: ReaderSettings.sepiaText,
                 isSelected: settings.theme == ReaderTheme.sepia,
-                onTap: () => notifier.updateReaderSettings(
+                onTap: () => notifier.updateSettings(
                   theme: ReaderTheme.sepia,
                 ),
               ),
               _ThemeOption(
                 label: 'Dark',
-                color: const Color(0xFF1E1E1E),
-                textColor: const Color(0xFFE0E0E0),
+                color: ReaderSettings.darkBg,
+                textColor: ReaderSettings.darkText,
                 isSelected: settings.theme == ReaderTheme.dark,
-                onTap: () => notifier.updateReaderSettings(
+                onTap: () => notifier.updateSettings(
                   theme: ReaderTheme.dark,
                 ),
               ),
@@ -135,6 +135,8 @@ class _ThemeOption extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return GestureDetector(
       onTap: onTap,
       child: Column(
@@ -147,16 +149,14 @@ class _ThemeOption extends StatelessWidget {
               shape: BoxShape.circle,
               border: Border.all(
                 color: isSelected
-                    ? Theme.of(context).colorScheme.primary
-                    : Colors.grey.withValues(alpha: 0.3),
+                    ? colorScheme.primary
+                    : colorScheme.outlineVariant,
                 width: isSelected ? 3 : 1,
               ),
               boxShadow: isSelected
                   ? [
                       BoxShadow(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.primary.withValues(alpha: 0.3),
+                        color: colorScheme.primary.withValues(alpha: 0.3),
                         blurRadius: 8,
                         spreadRadius: 1,
                       ),
@@ -180,9 +180,7 @@ class _ThemeOption extends StatelessWidget {
             label,
             style: Theme.of(context).textTheme.labelMedium?.copyWith(
               fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-              color: isSelected
-                  ? Theme.of(context).colorScheme.primary
-                  : Theme.of(context).colorScheme.onSurface,
+              color: isSelected ? colorScheme.primary : colorScheme.onSurface,
             ),
           ),
         ],

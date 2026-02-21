@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import 'package:omit/models/models.dart';
@@ -208,7 +209,7 @@ class _ArticleTile extends StatelessWidget {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               image: DecorationImage(
-                image: NetworkImage(feed.iconUrl!),
+                image: CachedNetworkImageProvider(feed.iconUrl!),
                 fit: BoxFit.cover,
                 onError: (exception, stackTrace) {},
               ),

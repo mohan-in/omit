@@ -118,7 +118,9 @@ class _ArticleWebViewState extends State<ArticleWebView> {
                   const SizedBox(height: 16),
                   Text(
                     'Loading article...',
-                    style: TextStyle(color: Colors.grey.shade600),
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.outline,
+                    ),
                   ),
                 ],
               ),

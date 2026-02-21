@@ -41,24 +41,33 @@ class BookmarksScreen extends StatelessWidget {
   }
 
   Widget _buildEmptyState(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.bookmark_border, size: 80, color: Colors.grey.shade400),
+            Icon(
+              Icons.bookmark_border,
+              size: 80,
+              color: colorScheme.outlineVariant,
+            ),
             const SizedBox(height: 16),
             Text(
               'No bookmarks yet',
-              style: Theme.of(
-                context,
-              ).textTheme.headlineSmall?.copyWith(color: Colors.grey.shade600),
+              style: textTheme.headlineSmall?.copyWith(
+                color: colorScheme.onSurface,
+              ),
             ),
             const SizedBox(height: 8),
             Text(
               'Bookmark articles to read them later',
-              style: Theme.of(context).textTheme.bodyMedium,
+              style: textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
               textAlign: TextAlign.center,
             ),
           ],
@@ -99,6 +108,8 @@ class _BookmarkTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
     final dateFormat = DateFormat('MMM d, yyyy');
 
     return Dismissible(
@@ -107,8 +118,8 @@ class _BookmarkTile extends StatelessWidget {
       background: Container(
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 20),
-        color: Colors.orange,
-        child: const Icon(Icons.bookmark_remove, color: Colors.white),
+        color: colorScheme.tertiary,
+        child: Icon(Icons.bookmark_remove, color: colorScheme.onTertiary),
       ),
       onDismissed: (_) => onRemove(),
       child: Card(
@@ -144,8 +155,7 @@ class _BookmarkTile extends StatelessWidget {
                     children: [
                       Text(
                         article.title,
-                        style: const TextStyle(
-                          fontSize: 15,
+                        style: textTheme.titleSmall?.copyWith(
                           fontWeight: FontWeight.w500,
                         ),
                         maxLines: 2,
@@ -155,9 +165,8 @@ class _BookmarkTile extends StatelessWidget {
                       if (article.pubDate != null)
                         Text(
                           dateFormat.format(article.pubDate!),
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey.shade500,
+                          style: textTheme.bodySmall?.copyWith(
+                            color: colorScheme.outline,
                           ),
                         ),
                     ],
@@ -167,7 +176,7 @@ class _BookmarkTile extends StatelessWidget {
                 // Bookmark icon
                 Icon(
                   Icons.bookmark,
-                  color: Theme.of(context).colorScheme.primary,
+                  color: colorScheme.primary,
                 ),
               ],
             ),

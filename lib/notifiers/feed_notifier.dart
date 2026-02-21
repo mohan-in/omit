@@ -92,20 +92,19 @@ class FeedNotifier extends ChangeNotifier with ErrorNotifierMixin {
       }
     } on Object catch (e) {
       setError('Failed to rename feed: $e');
-      // Revert if needed, but for now we just show error
     }
   }
 
-  /// Refresh all feeds.
+  /// Refresh all feeds concurrently for faster updates.
   Future<void> refreshAllFeeds() async {
     _isLoading = true;
     clearError();
     notifyListeners();
 
     try {
-      for (final feed in _feeds) {
-        await refreshFeed(feed.id);
-      }
+      await Future.wait(
+        _feeds.map((feed) => refreshFeed(feed.id)),
+      );
     } on Object catch (e) {
       setError('Failed to refresh feeds: $e');
     } finally {
@@ -134,11 +133,11 @@ class FeedNotifier extends ChangeNotifier with ErrorNotifierMixin {
     }
   }
 
-  /// Update unread count for a feed.
+  /// Update unread count for a feed (immutable via copyWith).
   void updateUnreadCount(String feedId, int count) {
     final index = _feeds.indexWhere((f) => f.id == feedId);
     if (index != -1) {
-      _feeds[index].unreadCount = count;
+      _feeds[index] = _feeds[index].copyWith(unreadCount: count);
       notifyListeners();
     }
   }
@@ -152,9 +151,9 @@ class FeedNotifier extends ChangeNotifier with ErrorNotifierMixin {
     final feed = _feeds.removeAt(oldIndex);
     _feeds.insert(newIdx, feed);
 
-    // Update order field for all feeds
+    // Update order field for all feeds (immutable via copyWith)
     for (var i = 0; i < _feeds.length; i++) {
-      _feeds[i].order = i;
+      _feeds[i] = _feeds[i].copyWith(order: i);
     }
 
     // Persist the new order

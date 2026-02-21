@@ -19,6 +19,8 @@ class CachedImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return CachedNetworkImage(
       imageUrl: imageUrl,
       width: width,
@@ -36,8 +38,8 @@ class CachedImage extends StatelessWidget {
         return Container(
           width: width,
           height: height,
-          color: Colors.grey.shade200,
-          child: const Icon(Icons.broken_image, color: Colors.grey),
+          color: colorScheme.surfaceContainerHighest,
+          child: Icon(Icons.broken_image, color: colorScheme.outline),
         );
       },
     );

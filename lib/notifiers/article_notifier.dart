@@ -124,21 +124,4 @@ class ArticleNotifier extends ChangeNotifier with ErrorNotifierMixin {
       setError('Failed to set reader mode: $e');
     }
   }
-
-  // Reader Mode Settings
-  ReaderSettings _readerSettings = const ReaderSettings();
-  ReaderSettings get readerSettings => _readerSettings;
-
-  void updateReaderSettings({
-    ReaderFont? font,
-    double? fontSizeScale,
-    ReaderTheme? theme,
-  }) {
-    _readerSettings = _readerSettings.copyWith(
-      font: font,
-      fontSizeScale: fontSizeScale,
-      theme: theme,
-    );
-    notifyListeners();
-  }
 }

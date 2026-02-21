@@ -32,25 +32,25 @@ class Article extends HiveObject {
   final String link;
 
   @HiveField(4)
-  String? description;
+  final String? description;
 
   @HiveField(5)
-  String? content;
+  final String? content;
 
   @HiveField(6)
-  String? author;
+  final String? author;
 
   @HiveField(7)
-  DateTime? pubDate;
+  final DateTime? pubDate;
 
   @HiveField(8)
-  String? imageUrl;
+  final String? imageUrl;
 
   @HiveField(9)
-  bool isRead;
+  final bool isRead;
 
   @HiveField(10)
-  bool isBookmarked;
+  final bool isBookmarked;
 
   /// Creates a unique ID for an article based on feed and link.
   static String generateId(String feedId, String link) {
@@ -90,7 +90,7 @@ class Article extends HiveObject {
     if (content == null || content!.isEmpty) return 1;
     // Strip HTML tags for more accurate word count
     final text = content!.replaceAll(RegExp('<[^>]*>'), '');
-    final wordCount = RegExp(r'\w+').allMatches(text).length;
+    final wordCount = RegExp(r'\\w+').allMatches(text).length;
     return (wordCount / 200).ceil();
   }
 }

@@ -11,6 +11,7 @@ enum ReaderTheme {
   sepia,
 }
 
+@immutable
 class ReaderSettings {
   const ReaderSettings({
     this.font = ReaderFont.serif,
@@ -21,6 +22,14 @@ class ReaderSettings {
   final ReaderFont font;
   final double fontSizeScale;
   final ReaderTheme theme;
+
+  // Shared color constants — single source of truth for ReaderThemeSheet
+  static const Color lightBg = Color(0xFFFFFFFF);
+  static const Color lightText = Color(0xFF333333);
+  static const Color darkBg = Color(0xFF1E1E1E);
+  static const Color darkText = Color(0xFFE0E0E0);
+  static const Color sepiaBg = Color(0xFFF4ECD8);
+  static const Color sepiaText = Color(0xFF5B4636);
 
   ReaderSettings copyWith({
     ReaderFont? font,
@@ -40,22 +49,34 @@ class ReaderSettings {
   Color get backgroundColor {
     switch (theme) {
       case ReaderTheme.light:
-        return const Color(0xFFFFFFFF);
+        return lightBg;
       case ReaderTheme.dark:
-        return const Color(0xFF1E1E1E);
+        return darkBg;
       case ReaderTheme.sepia:
-        return const Color(0xFFF4ECD8);
+        return sepiaBg;
     }
   }
 
   Color get textColor {
     switch (theme) {
       case ReaderTheme.light:
-        return const Color(0xFF333333);
+        return lightText;
       case ReaderTheme.dark:
-        return const Color(0xFFE0E0E0);
+        return darkText;
       case ReaderTheme.sepia:
-        return const Color(0xFF5B4636);
+        return sepiaText;
     }
   }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is ReaderSettings &&
+        other.font == font &&
+        other.fontSizeScale == fontSizeScale &&
+        other.theme == theme;
+  }
+
+  @override
+  int get hashCode => Object.hash(font, fontSizeScale, theme);
 }

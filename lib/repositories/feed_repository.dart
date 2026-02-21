@@ -16,11 +16,14 @@ class FeedRepository {
   /// Load all feeds from local storage.
   Future<List<Feed>> loadFeeds() async {
     final feeds = _storageService.getAllFeeds();
-    // Update unread counts
-    for (var i = 0; i < feeds.length; i++) {
-      feeds[i].unreadCount = _storageService.getUnreadCount(feeds[i].id);
-    }
-    return feeds;
+    // Update unread counts via copyWith
+    return feeds
+        .map(
+          (feed) => feed.copyWith(
+            unreadCount: _storageService.getUnreadCount(feed.id),
+          ),
+        )
+        .toList();
   }
 
   /// Add a new feed by URL.
@@ -40,10 +43,8 @@ class FeedRepository {
     await _storageService.saveFeed(feed);
     await _storageService.saveArticles(articles);
 
-    // Set unread count
-    feed.unreadCount = articles.length;
-
-    return feed;
+    // Return feed with correct unread count
+    return feed.copyWith(unreadCount: articles.length);
   }
 
   /// Refresh a specific feed (fetch new articles).
@@ -82,13 +83,14 @@ class FeedRepository {
 
     await _storageService.saveArticles(articlesToSave);
 
-    // Update feed metadata (preserving local title)
-    updatedFeed
-      ..title = feed.title
-      ..unreadCount = _storageService.getUnreadCount(feedId);
-    await _storageService.saveFeed(updatedFeed);
+    // Update feed metadata (preserving local title) via copyWith
+    final finalFeed = updatedFeed.copyWith(
+      title: feed.title,
+      unreadCount: _storageService.getUnreadCount(feedId),
+    );
+    await _storageService.saveFeed(finalFeed);
 
-    return updatedFeed;
+    return finalFeed;
   }
 
   /// Delete a feed and all its articles.
