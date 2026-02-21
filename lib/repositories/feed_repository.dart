@@ -39,12 +39,28 @@ class FeedRepository {
     // Fetch and parse the feed
     final (feed, articles) = await _rssService.fetchFeed(normalizedUrl);
 
+    // Determine the next order value based on existing feeds
+    final existingFeeds = _storageService.getAllFeeds();
+    final nextOrder = existingFeeds.isEmpty
+        ? 0
+        : existingFeeds
+                  .map((f) => f.order)
+                  .reduce(
+                    (a, b) => a > b ? a : b,
+                  ) +
+              1;
+
+    // Update feed with unread count and order
+    final feedToSave = feed.copyWith(
+      unreadCount: articles.length,
+      order: nextOrder,
+    );
+
     // Save feed and articles
-    await _storageService.saveFeed(feed);
+    await _storageService.saveFeed(feedToSave);
     await _storageService.saveArticles(articles);
 
-    // Return feed with correct unread count
-    return feed.copyWith(unreadCount: articles.length);
+    return feedToSave;
   }
 
   /// Refresh a specific feed (fetch new articles).
@@ -83,10 +99,11 @@ class FeedRepository {
 
     await _storageService.saveArticles(articlesToSave);
 
-    // Update feed metadata (preserving local title) via copyWith
+    // Update feed metadata (preserving local title and order) via copyWith
     final finalFeed = updatedFeed.copyWith(
       title: feed.title,
       unreadCount: _storageService.getUnreadCount(feedId),
+      order: feed.order,
     );
     await _storageService.saveFeed(finalFeed);
 
