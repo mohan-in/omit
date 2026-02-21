@@ -197,7 +197,7 @@ Filters ad content from RSS HTML using a curated domain blocklist.
 
 #### [ImportExportService](../lib/services/import_export_service.dart)
 
-Handles feed URL import/export via file picker.
+Handles feed import/export in **OPML format** (standard XML for RSS reader interop). Falls back to plain-text import for backwards compatibility.
 
 ---
 
@@ -459,4 +459,4 @@ The app uses a custom [AppTheme](../lib/theme/app_theme.dart) with Material 3:
 - [ ] Background sync for new articles
 - [ ] Feed categories/folders
 - [ ] Search functionality
-- [ ] Export/import OPML format
+- [x] Export/import OPML format
