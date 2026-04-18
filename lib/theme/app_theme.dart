@@ -120,12 +120,14 @@ class AppTheme {
       seedColor: Colors.blue,
       brightness: Brightness.dark,
       primary: _primaryColor,
+      surface: const Color(0xFF1E1E1E),
     );
 
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
       colorScheme: colorScheme,
+      scaffoldBackgroundColor: const Color(0xFF121212),
       appBarTheme: AppBarTheme(
         elevation: 0,
         scrolledUnderElevation: 0,
