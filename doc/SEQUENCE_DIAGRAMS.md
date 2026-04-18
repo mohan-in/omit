@@ -223,6 +223,7 @@ sequenceDiagram
     participant FN as FeedNotifier
     participant AN as ArticleNotifier
     participant RSN as ReaderSettingsNotifier
+    participant ASN as AppSettingsNotifier
     participant App as MultiProvider
 
     Main->>SS: StorageService()
@@ -245,6 +246,9 @@ sequenceDiagram
     Main->>RSN: ReaderSettingsNotifier(storage)
     Main->>RSN: loadSettings()
     Note over RSN: Restores font/theme/size<br/>from Hive
+    Main->>ASN: AppSettingsNotifier(storage)
+    Main->>ASN: loadSettings()
+    Note over ASN: Restores app theme mode<br/>from Hive
 
     Main->>FN: loadFeeds()
     Main->>App: runApp(MultiProvider(...))

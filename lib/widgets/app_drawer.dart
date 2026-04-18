@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:omit/screens/screens.dart';
 
 class AppDrawer extends StatelessWidget {
   const AppDrawer({
@@ -44,6 +47,22 @@ class AppDrawer extends StatelessWidget {
             leading: const Icon(Icons.file_upload_outlined),
             title: const Text('Export Feeds'),
             onTap: onExportFeeds,
+          ),
+          const Divider(),
+          ListTile(
+            leading: const Icon(Icons.settings_outlined),
+            title: const Text('Settings'),
+            onTap: () {
+              Navigator.pop(context); // Close drawer
+              unawaited(
+                Navigator.push(
+                  context,
+                  MaterialPageRoute<void>(
+                    builder: (_) => const SettingsScreen(),
+                  ),
+                ),
+              );
+            },
           ),
         ],
       ),

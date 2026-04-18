@@ -35,6 +35,7 @@ flowchart TB
         FN["FeedNotifier"]
         AN["ArticleNotifier"]
         RSN["ReaderSettingsNotifier"]
+        ASN["AppSettingsNotifier"]
     end
     
     subgraph Domain [Data Layer]
@@ -56,12 +57,14 @@ flowchart TB
     Screens --> FN
     Screens --> AN
     Screens --> RSN
+    Screens --> ASN
     Widgets --> FN
     Widgets --> AN
     Widgets --> RSN
     FN --> FR
     AN --> AR
     RSN --> SS
+    ASN --> SS
     FR --> RSS
     FR --> SS
     AR --> SS
@@ -106,6 +109,7 @@ lib/
 │   ├── feed_repository.dart
 │   └── repositories.dart      # Barrel export
 ├── notifiers/
+│   ├── app_settings_notifier.dart # App-wide settings state (theme)
 │   ├── article_notifier.dart  # Article list state
 │   ├── feed_notifier.dart     # Feed list state + parallel refresh
 │   ├── reader_settings_notifier.dart # Reader appearance state + persistence
@@ -118,6 +122,7 @@ lib/
 │   ├── article_webview.dart
 │   ├── reader_mode_view.dart  # Clean reader with readability.js
 │   ├── bookmarks_screen.dart
+│   ├── settings_screen.dart   # App-wide settings (theme selection)
 │   └── screens.dart           # Barrel export
 ├── widgets/
 │   ├── add_feed_dialog.dart
@@ -189,6 +194,7 @@ Manages local Hive storage with an **in-memory feed-to-article index** for O(1) 
 | State Management | `markAsRead()`, `toggleBookmark()`, `getBookmarkedArticles()` |
 | Settings | `getFeedReaderMode()`, `setFeedReaderMode()` — Per-feed reader preference |
 | Reader Settings | `getReaderSettings()`, `saveReaderSettings()` — Global reader appearance |
+| App Settings | `getAppThemeMode()`, `saveAppThemeMode()` — Global app theme (Light/Dark/System) |
 | Utilities | `init()`, `clearAll()`, `close()` |
 
 #### [AdBlockService](../lib/services/ad_block_service.dart)
@@ -287,6 +293,19 @@ Manages reader appearance independently from article state.
 | `loadSettings()` | Restore settings from Hive |
 | `updateSettings(...)` | Update font/theme/size and persist to Hive |
 
+#### [AppSettingsNotifier](../lib/notifiers/app_settings_notifier.dart)
+
+Manages app-wide settings (like Theme Mode).
+
+| Property | Type | Description |
+|--------|------|-------------|
+| `themeMode` | `ThemeMode` | Current app theme (System, Light, Dark) |
+
+| Method | Description |
+|--------|-------------|
+| `loadSettings()` | Restore app settings from Hive |
+| `updateThemeMode(mode)` | Update theme and persist to Hive |
+
 ---
 
 ### Screens
@@ -299,6 +318,7 @@ Manages reader appearance independently from article state.
 | [ReaderModeView](../lib/screens/reader_mode_view.dart) | Clean reader using readability.js with dynamic theme updates |
 | [ArticleWebView](../lib/screens/article_webview.dart) | Full web page view with ad blocking |
 | [BookmarksScreen](../lib/screens/bookmarks_screen.dart) | Saved bookmarks with swipe-to-remove |
+| [SettingsScreen](../lib/screens/settings_screen.dart) | App-wide settings with ThemeMode selection |
 
 ---
 
@@ -341,6 +361,7 @@ void main() async {
         ChangeNotifierProvider.value(value: feedNotifier),
         ChangeNotifierProvider.value(value: articleNotifier),
         ChangeNotifierProvider.value(value: readerSettingsNotifier),
+        ChangeNotifierProvider.value(value: appSettingsNotifier),
         Provider.value(value: storageService),
         Provider.value(value: importExportService),
       ],
@@ -447,7 +468,7 @@ sequenceDiagram
 The app uses a custom [AppTheme](../lib/theme/app_theme.dart) with Material 3:
 
 - **Primary Color:** Blue (#1565C0)
-- **Design:** Light theme with card-based layout
+- **Design:** Both Light and Dark themes via `AppTheme.lightTheme` and `AppTheme.darkTheme`
 - **All colors via `Theme.of(context).colorScheme`** — no hardcoded hex values in UI
 - Reader mode has its own theme defined by `ReaderSettings` constants
 
@@ -455,7 +476,7 @@ The app uses a custom [AppTheme](../lib/theme/app_theme.dart) with Material 3:
 
 ## Future Considerations
 
-- [ ] Dark theme support (all UI already uses theme tokens)
+- [x] Dark theme support (all UI already uses theme tokens)
 - [ ] Background sync for new articles
 - [ ] Feed categories/folders
 - [ ] Search functionality

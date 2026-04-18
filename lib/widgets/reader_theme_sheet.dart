@@ -83,6 +83,15 @@ class ReaderThemeSheet extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               _ThemeOption(
+                label: 'System',
+                color: Theme.of(context).colorScheme.surface,
+                textColor: Theme.of(context).colorScheme.onSurface,
+                isSelected: settings.theme == ReaderTheme.system,
+                onTap: () => notifier.updateSettings(
+                  theme: ReaderTheme.system,
+                ),
+              ),
+              _ThemeOption(
                 label: 'Light',
                 color: ReaderSettings.lightBg,
                 textColor: ReaderSettings.lightText,

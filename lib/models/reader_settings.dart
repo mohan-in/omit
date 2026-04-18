@@ -6,6 +6,7 @@ enum ReaderFont {
 }
 
 enum ReaderTheme {
+  system,
   light,
   dark,
   sepia,
@@ -16,7 +17,7 @@ class ReaderSettings {
   const ReaderSettings({
     this.font = ReaderFont.serif,
     this.fontSizeScale = 1.0,
-    this.theme = ReaderTheme.light,
+    this.theme = ReaderTheme.system,
   });
 
   final ReaderFont font;
@@ -46,25 +47,35 @@ class ReaderSettings {
   // Helpers for UI
   String get fontFamily => font == ReaderFont.serif ? 'Serif' : 'Sans-serif';
 
-  Color get backgroundColor {
-    switch (theme) {
+  Color backgroundColor(Brightness brightness) {
+    final effectiveTheme = theme == ReaderTheme.system
+        ? (brightness == Brightness.dark ? ReaderTheme.dark : ReaderTheme.light)
+        : theme;
+    switch (effectiveTheme) {
       case ReaderTheme.light:
         return lightBg;
       case ReaderTheme.dark:
         return darkBg;
       case ReaderTheme.sepia:
         return sepiaBg;
+      case ReaderTheme.system:
+        return lightBg;
     }
   }
 
-  Color get textColor {
-    switch (theme) {
+  Color textColor(Brightness brightness) {
+    final effectiveTheme = theme == ReaderTheme.system
+        ? (brightness == Brightness.dark ? ReaderTheme.dark : ReaderTheme.light)
+        : theme;
+    switch (effectiveTheme) {
       case ReaderTheme.light:
         return lightText;
       case ReaderTheme.dark:
         return darkText;
       case ReaderTheme.sepia:
         return sepiaText;
+      case ReaderTheme.system:
+        return lightText;
     }
   }
 

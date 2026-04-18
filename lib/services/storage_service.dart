@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:omit/models/models.dart';
 
@@ -223,7 +224,7 @@ class StorageService {
           fontSizeScale: (map['fontSizeScale'] as num?)?.toDouble() ?? 1.0,
           theme: ReaderTheme.values.firstWhere(
             (t) => t.name == map['theme'],
-            orElse: () => ReaderTheme.light,
+            orElse: () => ReaderTheme.system,
           ),
         );
       } on Object catch (_) {
@@ -242,6 +243,25 @@ class StorageService {
       'theme': settings.theme.name,
     });
     await _settingsBox!.put(_readerSettingsKey, json);
+  }
+
+  /// Get the app theme mode.
+  ThemeMode getAppThemeMode() {
+    _ensureInitialized();
+    final value = _settingsBox!.get('app_theme_mode');
+    if (value is String) {
+      return ThemeMode.values.firstWhere(
+        (e) => e.name == value,
+        orElse: () => ThemeMode.system,
+      );
+    }
+    return ThemeMode.system;
+  }
+
+  /// Set the app theme mode.
+  Future<void> saveAppThemeMode(ThemeMode mode) async {
+    _ensureInitialized();
+    await _settingsBox!.put('app_theme_mode', mode.name);
   }
 
   // ============ Helpers ============

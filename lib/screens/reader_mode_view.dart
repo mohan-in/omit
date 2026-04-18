@@ -46,8 +46,9 @@ class _ReaderModeViewState extends State<ReaderModeView> {
   void _updateStylesInWebView(ReaderSettings settings) {
     if (!mounted) return;
 
-    final bgColor = _colorToHex(settings.backgroundColor);
-    final textColor = _colorToHex(settings.textColor);
+    final brightness = Theme.of(context).brightness;
+    final bgColor = _colorToHex(settings.backgroundColor(brightness));
+    final textColor = _colorToHex(settings.textColor(brightness));
     final fontSize = '${18 * settings.fontSizeScale}px';
     final fontFamily = settings.fontFamily;
 
@@ -106,8 +107,9 @@ class _ReaderModeViewState extends State<ReaderModeView> {
 
     final settings = context.read<ReaderSettingsNotifier>().settings;
     final primaryColorHtml = _colorToHex(Theme.of(context).colorScheme.primary);
-    final bgColor = _colorToHex(settings.backgroundColor);
-    final textColor = _colorToHex(settings.textColor);
+    final brightness = Theme.of(context).brightness;
+    final bgColor = _colorToHex(settings.backgroundColor(brightness));
+    final textColor = _colorToHex(settings.textColor(brightness));
     final fontSize = '${18 * settings.fontSizeScale}px';
     final fontFamily = settings.fontFamily;
 
@@ -178,14 +180,18 @@ class _ReaderModeViewState extends State<ReaderModeView> {
       (n) => n.settings,
     );
 
+    final brightness = Theme.of(context).brightness;
+    final bgColor = settings.backgroundColor(brightness);
+    final txtColor = settings.textColor(brightness);
+
     return Scaffold(
-      backgroundColor: settings.backgroundColor,
+      backgroundColor: bgColor,
       appBar: AppBar(
-        backgroundColor: settings.backgroundColor,
-        iconTheme: IconThemeData(color: settings.textColor),
+        backgroundColor: bgColor,
+        iconTheme: IconThemeData(color: txtColor),
         title: Text(
           widget.article.title,
-          style: TextStyle(color: settings.textColor),
+          style: TextStyle(color: txtColor),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),

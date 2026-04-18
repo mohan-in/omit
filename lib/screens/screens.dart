@@ -7,3 +7,4 @@ export 'article_webview.dart';
 export 'bookmarks_screen.dart';
 export 'feeds_screen.dart';
 export 'reader_mode_view.dart';
+export 'settings_screen.dart';

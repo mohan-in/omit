@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
-/// Light theme configuration for the RSS Reader app.
+/// Theme configuration for the RSS Reader app.
+/// Provides both light and dark themes using Material 3 guidelines.
 class AppTheme {
   AppTheme._();
 
@@ -10,6 +11,7 @@ class AppTheme {
 
   // Text colors
 
+  /// Returns the light theme configuration.
   static ThemeData get lightTheme {
     final colorScheme = ColorScheme.fromSeed(
       seedColor: Colors.blue,
@@ -25,7 +27,6 @@ class AppTheme {
 
       // Set distinct background color for the scaffold
       // to differentiate from cards
-      // scaffoldBackgroundColor: colorScheme.surfaceContainerLowest,
 
       // AppBar theme: "Bold Primary" style
       // Uses the primary color for background and white for text/icons
@@ -64,7 +65,6 @@ class AppTheme {
       cardTheme: const CardThemeData(
         elevation: 2, // Add elevation for depth
         margin: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-        // color: _surfaceColor,
         clipBehavior: Clip.antiAlias,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.all(Radius.circular(16)),
@@ -110,6 +110,83 @@ class AppTheme {
         space: 1,
         thickness: 1,
         color: Color(0xFFEEEEEE),
+      ),
+    );
+  }
+
+  /// Returns the dark theme configuration.
+  static ThemeData get darkTheme {
+    final colorScheme = ColorScheme.fromSeed(
+      seedColor: Colors.blue,
+      brightness: Brightness.dark,
+      primary: _primaryColor,
+    );
+
+    return ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.dark,
+      colorScheme: colorScheme,
+      appBarTheme: AppBarTheme(
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        centerTitle: false,
+        backgroundColor: colorScheme.surface,
+        foregroundColor: colorScheme.onSurface,
+        titleTextStyle: TextStyle(
+          color: colorScheme.onSurface,
+          fontSize: 20,
+          fontWeight: FontWeight.w600,
+        ),
+        iconTheme: IconThemeData(color: colorScheme.onSurface),
+      ),
+      drawerTheme: DrawerThemeData(
+        backgroundColor: colorScheme.surface,
+        elevation: 1,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.only(
+            topRight: Radius.circular(16),
+            bottomRight: Radius.circular(16),
+          ),
+        ),
+      ),
+      cardTheme: const CardThemeData(
+        elevation: 2,
+        margin: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        clipBehavior: Clip.antiAlias,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(16)),
+        ),
+      ),
+      listTileTheme: const ListTileThemeData(
+        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(12)),
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: colorScheme.surfaceContainerHighest,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: colorScheme.outline),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: colorScheme.outline),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: _primaryColor, width: 2),
+        ),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
+        ),
+      ),
+      dividerTheme: DividerThemeData(
+        space: 1,
+        thickness: 1,
+        color: colorScheme.outlineVariant,
       ),
     );
   }

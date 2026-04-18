@@ -52,6 +52,9 @@ void main() async {
   final readerSettingsNotifier = ReaderSettingsNotifier(
     storageService: storageService,
   )..loadSettings();
+  final appSettingsNotifier = AppSettingsNotifier(
+    storageService: storageService,
+  )..loadSettings();
 
   await feedNotifier.loadFeeds();
 
@@ -61,24 +64,39 @@ void main() async {
         ChangeNotifierProvider.value(value: feedNotifier),
         ChangeNotifierProvider.value(value: articleNotifier),
         ChangeNotifierProvider.value(value: readerSettingsNotifier),
+        ChangeNotifierProvider.value(value: appSettingsNotifier),
         Provider.value(value: storageService),
         Provider.value(value: importExportService),
       ],
-      child: OmitApp(isDesktopMode: isDesktopMode),
+      child: Consumer<AppSettingsNotifier>(
+        builder: (context, appSettings, _) {
+          return OmitApp(
+            isDesktopMode: isDesktopMode,
+            themeMode: appSettings.themeMode,
+          );
+        },
+      ),
     ),
   );
 }
 
 class OmitApp extends StatelessWidget {
-  const OmitApp({required this.isDesktopMode, super.key});
+  const OmitApp({
+    required this.isDesktopMode,
+    required this.themeMode,
+    super.key,
+  });
 
   final bool isDesktopMode;
+  final ThemeMode themeMode;
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Omit',
       theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: themeMode,
       home: const FeedsScreen(),
       builder: DexCompat.builder(isDesktopMode),
     );
